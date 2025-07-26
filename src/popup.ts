@@ -1,39 +1,86 @@
+import { StorageObject } from "./model";
 import { ViewModel } from "./viewModel";
 
 document.addEventListener("DOMContentLoaded", () => {
-  const _viewModel = new ViewModel();
+  const viewModel_ = new ViewModel();
 
-  /**
-   * Binding HTML Element
-   */
   const inputNotionApi = document.getElementById(
     "inputNotionApi"
   ) as HTMLInputElement;
+  inputNotionApi.addEventListener("input", (event) => {
+    const newValue = (event.target as HTMLInputElement).value;
+    viewModel_.UpdateNotionApiField(newValue);
+  });
 
   const inputNotionPageId = document.getElementById(
     "inputNotionPageId"
   ) as HTMLInputElement;
+  inputNotionPageId.addEventListener("input", (event) => {
+    const newValue = (event.target as HTMLInputElement).value;
+    viewModel_.UpdateNotionPageIdField(newValue);
+  });
 
-  const btnAddNote = document.getElementById("btnAddNote") as HTMLButtonElement;
-  const btnUpdate = document.getElementById("btnUpdate") as HTMLButtonElement;
   const btnDeleteNote = document.getElementById(
     "btnDeleteNote"
   ) as HTMLButtonElement;
 
-  /**
-   * Binding HTML User Input
-   */
+  const btnUpdate = document.getElementById("btnUpdate") as HTMLButtonElement;
   btnUpdate.addEventListener("click", () => {
-    const value1 = inputNotionApi.value;
-    const value2 = inputNotionPageId.value;
-
-    console.log("第一個輸入框的值:", value1);
-    console.log("第二個輸入框的值:", value2);
-
-    _viewModel.test(value1, value2, 1);
+    viewModel_.ClickUpdateBtn();
   });
 
   /**
-   * Binding Data
+   * 以下正式版可以直接刪除
    */
+  const tmpIndex = document.getElementById("tmpIndex") as HTMLHeadingElement;
+  const tmpSum = document.getElementById("tmpSum") as HTMLHeadingElement;
+  const tmpTitle = document.getElementById("tmpTitle") as HTMLHeadingElement;
+  const btnClear = document.getElementById("btnClear") as HTMLButtonElement;
+  btnClear.addEventListener("click", () => {
+    viewModel_.ClickClearBtn();
+  });
+  const btnShow = document.getElementById("btnShow") as HTMLButtonElement;
+  btnShow.addEventListener("click", () => {
+    viewModel_.ClickShowBtn();
+  });
+  const btnNext = document.getElementById("btnNext") as HTMLButtonElement;
+  btnNext.addEventListener("click", () => {
+    viewModel_.ClickNextBtn();
+  });
+  const btnBack = document.getElementById("btnBack") as HTMLButtonElement;
+  btnBack.addEventListener("click", () => {
+    viewModel_.ClickBackBtn();
+  });
+  const btnAddNote = document.getElementById("btnAddNote") as HTMLButtonElement;
+  btnAddNote.addEventListener("click", () => {
+    viewModel_.ClickAddBtn();
+  });
+
+  // Init
+  var object = viewModel_.GetStorageObject();
+  if (object) {
+    inputNotionApi.value = object.notionApi;
+    inputNotionPageId.value = object.noteList[object.noteListIndex][0].pageId;
+
+    /**
+     * 以下正式版可以直接刪除
+     */
+    tmpIndex.textContent = (object.noteListIndex + 1).toString();
+    tmpSum.textContent = object.noteList.length.toString();
+    tmpTitle.textContent = object.noteList[object.noteListIndex][0].title;
+  }
+
+  const onStorageObjectUpdate = (newValue: StorageObject) => {
+    inputNotionApi.value = newValue.notionApi;
+    inputNotionPageId.value =
+      newValue.noteList[newValue.noteListIndex][0].pageId;
+
+    /**
+     * 以下正式版可以直接刪除
+     */
+    tmpIndex.textContent = (newValue.noteListIndex + 1).toString();
+    tmpSum.textContent = newValue.noteList.length.toString();
+    tmpTitle.textContent = newValue.noteList[newValue.noteListIndex][0].title;
+  };
+  viewModel_.Subscribe(onStorageObjectUpdate);
 });

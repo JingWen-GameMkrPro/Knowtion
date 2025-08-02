@@ -1,8 +1,9 @@
 import * as ModelTypes from "./model";
+import * as T from "./commonType";
 
 export class ViewModel {
   private model_: ModelTypes.Model;
-  private subscriberStorageObject_: ((newValue: ModelTypes.StorageObject) => void)[] = [];
+  private subscriberStorageObject_: ((newValue: T.StorageObject) => void)[] = [];
 
   constructor() {
     this.model_ = new ModelTypes.Model();
@@ -13,7 +14,7 @@ export class ViewModel {
     return this.model_.GetStorageObject();
   }
 
-  public SubscribeStorageObject(callback: (newValue: ModelTypes.StorageObject) => void): void {
+  public SubscribeStorageObject(callback: (newValue: T.StorageObject) => void): void {
     this.subscriberStorageObject_.push(callback);
   }
 
@@ -67,11 +68,7 @@ export class ViewModel {
   public ClickAddBtn() {
     var storageObject = this.model_.GetStorageObject();
     if (storageObject) {
-      storageObject.noteList.push([
-        ModelTypes.DEFAULT_NOTE_INFO,
-        ModelTypes.DEFAULT_ORIGIN_DATA,
-        ModelTypes.DEFAULT_NOTE,
-      ]);
+      storageObject.noteList.push([T.DEFAULT_NOTE_INFO, T.DEFAULT_ORIGIN_DATA, T.DEFAULT_NOTE]);
       storageObject.noteListIndex = storageObject.noteList.length - 1;
       this.model_.UserSetStorageObject(storageObject);
     }
@@ -97,11 +94,11 @@ export class ViewModel {
     }
   }
 
-  private onStorageObjectUpdate(newValue: ModelTypes.StorageObject) {
+  private onStorageObjectUpdate(newValue: T.StorageObject) {
     this.notify(newValue);
   }
 
-  private notify(newValue: ModelTypes.StorageObject): void {
+  private notify(newValue: T.StorageObject): void {
     this.subscriberStorageObject_.forEach((callback) => callback(newValue));
   }
 }

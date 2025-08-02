@@ -1,4 +1,4 @@
-import { StorageObject } from "./model";
+import * as T from "./commonType";
 import { ViewModel } from "./viewModel";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tmpTitle.textContent = object.noteList[object.noteListIndex][0].title;
   }
 
-  const onStorageObjectUpdate = (newValue: StorageObject) => {
+  const onStorageObjectUpdate = (newValue: T.StorageObject) => {
     inputNotionApi.value = newValue.notionApi;
     inputNotionPageId.value = newValue.noteList[newValue.noteListIndex][0].pageId;
 

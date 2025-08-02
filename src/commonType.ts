@@ -1,9 +1,41 @@
-// export interface TrieNode {
-//   children: { [key: string]: TrieNode };
-//   values =
-// }
+import { IsNullorUndefined } from "./utility";
 
-export interface Trie {}
+export interface TrieNode {
+  children: { [key: string]: TrieNode };
+  values: Value[][];
+  isEnd: boolean;
+}
+
+export function CreateTrieNode(): TrieNode {
+  return {
+    children: {},
+    values: [],
+    isEnd: true,
+  };
+}
+
+export interface Trie {
+  root: TrieNode;
+}
+
+export function CreateTrie(): Trie {
+  return {
+    root: CreateTrieNode(),
+  };
+}
+
+export function InsertTrie(trie: Trie, noteLine: NoteLine) {
+  let currentNode: TrieNode = trie.root;
+  for (const char of noteLine.key) {
+    if (!currentNode.children[char]) {
+      currentNode.children[char] = CreateTrieNode();
+    }
+    currentNode = currentNode.children[char];
+  }
+
+  currentNode.isEnd = true;
+  currentNode.values.push(noteLine.values);
+}
 
 // 要儲存到chrome storage的所有資料
 export interface StorageObject {
@@ -15,6 +47,8 @@ export interface StorageObject {
   noteListIndex: number;
   // NOTE
   noteList: [NoteInfo, OriginData, Note][];
+
+  trie: Trie;
 }
 
 export const LOCAL_STORAGE_KEY = {

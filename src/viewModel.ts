@@ -30,6 +30,7 @@ export class ViewModel {
     var newNoteInfo = this.model_.TransformNotionPageInfoAsNoteInfo(infoJson);
     var newOrinData = this.model_.TransformNotionPageBlocksAsOriginData(blocksJson);
     var newNote = this.model_.TransformOriginDataAsNote(newOrinData);
+
     //儲存
     var storageObject = this.model_.GetStorageObject();
     if (storageObject && newNoteInfo && newOrinData && newNote) {
@@ -74,7 +75,16 @@ export class ViewModel {
     }
   }
 
-  public ClickShowBtn() {
+  public ClickDebugBtn() {
+    console.log(this.model_.GetStorageObject());
+  }
+
+  public ClickDebug2Btn() {
+    var storageObject = this.model_.GetStorageObject();
+    const allNote: T.Note[] = (storageObject?.noteList || []).map(([info, origin, note]) => note);
+    var newTrie = this.model_.rebuildTrie(allNote);
+    storageObject!.trie = newTrie;
+    this.model_.UserSetStorageObject(storageObject!);
     console.log(this.model_.GetStorageObject());
   }
 

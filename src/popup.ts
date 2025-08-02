@@ -33,9 +33,13 @@ document.addEventListener("DOMContentLoaded", () => {
   btnClear.addEventListener("click", () => {
     viewModel_.ClickClearBtn();
   });
-  const btnShow = document.getElementById("btnShow") as HTMLButtonElement;
-  btnShow.addEventListener("click", () => {
-    viewModel_.ClickShowBtn();
+  const btnDebug = document.getElementById("btnDebug") as HTMLButtonElement;
+  btnDebug.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn();
+  });
+  const btnDebug2 = document.getElementById("btnDebug2") as HTMLButtonElement;
+  btnDebug2.addEventListener("click", () => {
+    viewModel_.ClickDebug2Btn();
   });
   const btnNext = document.getElementById("btnNext") as HTMLButtonElement;
   btnNext.addEventListener("click", () => {

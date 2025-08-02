@@ -180,6 +180,8 @@ export class Model {
       noteListIndex: 0,
       // NOTE
       noteList: [[T.DEFAULT_NOTE_INFO, T.DEFAULT_ORIGIN_DATA, T.DEFAULT_NOTE]],
+
+      trie: T.CreateTrie(),
     };
     Util.setChromeData(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT, defaultObject);
 
@@ -264,5 +266,15 @@ export class Model {
     }
 
     return null;
+  }
+
+  public rebuildTrie(noteList: T.Note[]): T.Trie {
+    const newTrie = T.CreateTrie();
+    noteList.forEach((note) => {
+      note.noteBlocks.forEach((noteLine) => {
+        T.InsertTrie(newTrie, noteLine);
+      });
+    });
+    return newTrie;
   }
 }

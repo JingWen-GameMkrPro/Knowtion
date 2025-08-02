@@ -1,12 +1,11 @@
+import * as Utility from "./utility";
+
 export class Model {
-  private subscribers_: ((newValue: StorageObject) => void)[] = [];
+  private subscriberStorageObject_: ((newValue: StorageObject) => void)[] = [];
   private chromeStorageProcessor_ = new ChromeStorageProcessor();
 
-  public SetStorageObject(newValue: StorageObject): void {
-    this.chromeStorageProcessor_.setData<StorageObject>(
-      LOCAL_STORAGE_KEY.STORAGE_OBJECT,
-      newValue
-    );
+  public UserSetStorageObject(newValue: StorageObject): void {
+    this.chromeStorageProcessor_.setData<StorageObject>(LOCAL_STORAGE_KEY.STORAGE_OBJECT, newValue);
     this.notify(newValue);
   }
 
@@ -22,6 +21,7 @@ export class Model {
 
     return data;
   }
+
   public ClearStorageObject() {
     this.chromeStorageProcessor_.clearData(LOCAL_STORAGE_KEY.STORAGE_OBJECT);
     var newValue = this.GetStorageObject();
@@ -29,83 +29,100 @@ export class Model {
       this.notify(newValue);
     }
   }
-  private setDefaultStorageObject(): StorageObject {
-    var defaultObject: StorageObject = {
-      notionApi: "Default",
 
-      isHighlight: false,
-
-      noteListIndex: 0,
-      // NOTE
-      noteList: [[DEFAULT_NOTE_INFO, DEFAULT_ORIGIN_DATA, DEFAULT_NOTE]],
-    };
-    this.chromeStorageProcessor_.setData(
-      LOCAL_STORAGE_KEY.STORAGE_OBJECT,
-      defaultObject
-    );
-
-    return defaultObject;
+  public SubscribeStorageObject(callback: (newValue: StorageObject) => void): void {
+    this.subscriberStorageObject_.push(callback);
   }
-
-  public Subscribe(callback: (newValue: StorageObject) => void): void {
-    this.subscribers_.push(callback);
-  }
-
-  private notify(newValue: StorageObject): void {
-    this.subscribers_.forEach((callback) => callback(newValue));
-  }
-
-  public async UpdateNote(
-    notionApi: string,
-    pageId: string,
-    notebaseIndex: number
-  ) {}
 
   public async FetchNotionPageInfo() {
     var storageObject = this.GetStorageObject();
-
     var notionApi = storageObject?.notionApi;
     var noteListIndex = storageObject?.noteListIndex;
     var noteList = storageObject?.noteList;
 
-    if (!notionApi || !noteListIndex || !noteList) {
+    if (Utility.IsAnyNullOrUndefined(notionApi, noteListIndex, noteList)) {
       return;
     }
 
-    var json = await this.fetchNotionPageInfo(
-      notionApi,
-      noteList[noteListIndex][0].pageId
-    );
+    var json = await this.fetchNotionPageInfo(notionApi!, noteList![noteListIndex!][0].pageId);
+
+    return json ? json : null;
+  }
+
+  public async FetchNotionPageBlocks() {
+    var storageObject = this.GetStorageObject();
+    var notionApi = storageObject?.notionApi;
+    var noteListIndex = storageObject?.noteListIndex;
+    var noteList = storageObject?.noteList;
+
+    if (Utility.IsAnyNullOrUndefined(notionApi, noteListIndex, noteList)) {
+      return;
+    }
+
+    var json = await this.fetchNotionPageBlocks(notionApi!, noteList![noteListIndex!][0].pageId);
 
     return json ? json : null;
   }
 
   public TransformNotionPageInfoAsNoteInfo(json: any): NoteInfo {
-    var noteInfo: NoteInfo = {
-      pageId: "",
-
-      title: "",
-
-      lastEditedTime: new Date(),
-
-      fetchTime: new Date(),
-    };
+    var noteInfo: NoteInfo = DEFAULT_NOTE_INFO;
+    noteInfo.fetchTime = Date.now();
+    noteInfo.lastEditedTime = new Date(json.last_edited_time).getTime();
+    noteInfo.pageId = json.id;
+    noteInfo.title = json.properties.Name.title[0].plain_text;
     return noteInfo;
   }
 
   public TransformNotionPageBlocksAsOriginData(json: any): OriginData {
-    var originData: OriginData = {
-      notionPageBlocks: [],
-    };
+    var originData: OriginData = DEFAULT_ORIGIN_DATA;
+    originData.notionPageBlocks = json;
     return originData;
   }
 
-  public async FetchNotionPageBlocks() {}
+  async fetchNotionPageBlocks(notionApi: string, notionPageId: string): Promise<any> {
+    const blocks: any[] = [];
+    let nextCursor: string | null = null;
+    let hasMore = true;
 
-  async fetchNotionPageInfo(
-    notionApi: string,
-    notionPageId: string
-  ): Promise<any> {
+    try {
+      while (hasMore) {
+        const url = new URL(`https://api.notion.com/v1/blocks/${notionPageId}/children`);
+
+        url.searchParams.set("page_size", "100");
+        if (nextCursor) {
+          url.searchParams.set("start_cursor", nextCursor);
+        }
+
+        const response = await fetch(url.toString(), {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${notionApi}`,
+            "Notion-Version": "2022-06-28",
+          },
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          console.error("Failed to fetch Notion page blocks:", error);
+          return null;
+        }
+
+        const data = await response.json();
+
+        blocks.push(...data.results);
+
+        hasMore = data.has_more;
+        nextCursor = data.next_cursor;
+      }
+
+      return blocks;
+    } catch (error) {
+      console.error("Error fetching Notion page blocks:", error);
+      return null;
+    }
+  }
+
+  async fetchNotionPageInfo(notionApi: string, notionPageId: string): Promise<any> {
     const url = `https://api.notion.com/v1/pages/${notionPageId}`;
     try {
       const response = await fetch(url, {
@@ -127,6 +144,25 @@ export class Model {
       console.error("Error fetching Notion page info:", error);
       return null;
     }
+  }
+
+  private notify(newValue: StorageObject): void {
+    this.subscriberStorageObject_.forEach((callback) => callback(newValue));
+  }
+
+  private setDefaultStorageObject(): StorageObject {
+    var defaultObject: StorageObject = {
+      notionApi: "Default",
+
+      isHighlight: false,
+
+      noteListIndex: 0,
+      // NOTE
+      noteList: [[DEFAULT_NOTE_INFO, DEFAULT_ORIGIN_DATA, DEFAULT_NOTE]],
+    };
+    this.chromeStorageProcessor_.setData(LOCAL_STORAGE_KEY.STORAGE_OBJECT, defaultObject);
+
+    return defaultObject;
   }
 }
 class ChromeStorageProcessor {
@@ -185,15 +221,15 @@ export interface NoteInfo {
 
   title: string; //筆記標題
 
-  lastEditedTime: Date;
+  lastEditedTime: Number;
 
-  fetchTime: Date;
+  fetchTime: Number;
 }
 export const DEFAULT_NOTE_INFO: NoteInfo = {
   pageId: "Default",
   title: "Default",
-  lastEditedTime: new Date(0),
-  fetchTime: new Date(0),
+  lastEditedTime: new Number(),
+  fetchTime: new Number(),
 };
 
 // Notion JSON 提取的 Blocks
@@ -207,7 +243,6 @@ export const DEFAULT_ORIGIN_DATA: OriginData = {
 export interface Note {
   noteBlocks: Block[]; //筆記內容
 }
-
 export const DEFAULT_NOTE: Note = {
   noteBlocks: [],
 };

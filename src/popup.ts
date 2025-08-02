@@ -4,25 +4,19 @@ import { ViewModel } from "./viewModel";
 document.addEventListener("DOMContentLoaded", () => {
   const viewModel_ = new ViewModel();
 
-  const inputNotionApi = document.getElementById(
-    "inputNotionApi"
-  ) as HTMLInputElement;
+  const inputNotionApi = document.getElementById("inputNotionApi") as HTMLInputElement;
   inputNotionApi.addEventListener("input", (event) => {
     const newValue = (event.target as HTMLInputElement).value;
-    viewModel_.UpdateNotionApiField(newValue);
+    viewModel_.UserSetNotionApiField(newValue);
   });
 
-  const inputNotionPageId = document.getElementById(
-    "inputNotionPageId"
-  ) as HTMLInputElement;
+  const inputNotionPageId = document.getElementById("inputNotionPageId") as HTMLInputElement;
   inputNotionPageId.addEventListener("input", (event) => {
     const newValue = (event.target as HTMLInputElement).value;
-    viewModel_.UpdateNotionPageIdField(newValue);
+    viewModel_.UserSetNotionPageIdField(newValue);
   });
 
-  const btnDeleteNote = document.getElementById(
-    "btnDeleteNote"
-  ) as HTMLButtonElement;
+  const btnDeleteNote = document.getElementById("btnDeleteNote") as HTMLButtonElement;
 
   const btnUpdate = document.getElementById("btnUpdate") as HTMLButtonElement;
   btnUpdate.addEventListener("click", () => {
@@ -72,8 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const onStorageObjectUpdate = (newValue: StorageObject) => {
     inputNotionApi.value = newValue.notionApi;
-    inputNotionPageId.value =
-      newValue.noteList[newValue.noteListIndex][0].pageId;
+    inputNotionPageId.value = newValue.noteList[newValue.noteListIndex][0].pageId;
 
     /**
      * 以下正式版可以直接刪除
@@ -82,5 +75,5 @@ document.addEventListener("DOMContentLoaded", () => {
     tmpSum.textContent = newValue.noteList.length.toString();
     tmpTitle.textContent = newValue.noteList[newValue.noteListIndex][0].title;
   };
-  viewModel_.Subscribe(onStorageObjectUpdate);
+  viewModel_.SubscribeStorageObject(onStorageObjectUpdate);
 });

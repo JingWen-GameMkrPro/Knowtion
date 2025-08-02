@@ -8,7 +8,7 @@ export function IsAnyNullOrUndefined<T extends readonly any[]>(...values: T): bo
   return values.some((value) => IsNullorUndefined(value));
 }
 
-export function DivideTextWithSymbol(value: string, symbol: string): [string, string] | null {
+export function DivideStringWithSymbol(value: string, symbol: string): [string, string] | null {
   const parts = value.split(symbol);
   if (parts.length === 2) {
     return [parts[0], parts[1]];

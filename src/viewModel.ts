@@ -29,7 +29,6 @@ export class ViewModel {
     var newNoteInfo = this.model_.TransformNotionPageInfoAsNoteInfo(infoJson);
     var newOrinData = this.model_.TransformNotionPageBlocksAsOriginData(blocksJson);
     var newNote = this.model_.TransformOriginDataAsNote(newOrinData);
-
     //儲存
     var storageObject = this.model_.GetStorageObject();
     if (storageObject && newNoteInfo && newOrinData && newNote) {

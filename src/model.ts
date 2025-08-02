@@ -89,19 +89,14 @@ export class Model {
   }
 
   public TransformOriginDataAsNote(originData: OriginData): Note {
-    var note: Note = DEFAULT_NOTE;
-    originData.notionPageBlocks.forEach((block) => {
-      // TODO: 分割符號先使用 '/'
-      const twoParts = Utility.DivideTextWithSymbol(block, "/");
+    var note: Note = {
+      ...DEFAULT_NOTE,
+      noteBlocks: [],
+    };
 
-      // TODO: 將Values分成更細微value
-      if (!Utility.IsNullorUndefined(twoParts)) {
-        const newValue = DEFAULT_VALUE;
-        newValue.content = twoParts[1];
-        const newNoteLine: NoteLine = {
-          key: twoParts[0],
-          values: [newValue],
-        };
+    originData.notionPageBlocks.forEach((block) => {
+      const newNoteLine = this.makeNoteLine(block);
+      if (!Utility.IsNullorUndefined(newNoteLine)) {
         note.noteBlocks.push(newNoteLine);
       }
     });
@@ -192,6 +187,86 @@ export class Model {
 
     return defaultObject;
   }
+
+  private divideStringWithPattern(value: string): [BlockValueType, string][] {
+    const result: [BlockValueType, string][] = [];
+    const regex = /[^@~&]+|[@~&]\{[^}]*\}/g;
+    const matches = value.match(regex);
+
+    if (!matches) {
+      return [];
+    }
+
+    // 映射符號到 BlockValueType
+    const typeMap = {
+      "@": BlockValueType.exampleText,
+      "~": BlockValueType.warningText,
+      "&": BlockValueType.referenceText,
+    };
+
+    matches.forEach((match) => {
+      let type: BlockValueType = BlockValueType.text;
+      let content = match;
+
+      // 檢查字串是否以特殊符號開頭
+      const firstChar = match[0];
+      if (firstChar === "@" || firstChar === "~" || firstChar === "&") {
+        type = typeMap[firstChar as keyof typeof typeMap];
+        content = match.slice(2, -1); // 移除開頭符號、大括號和結尾大括號
+      }
+
+      result.push([type, content]);
+    });
+
+    return result;
+  }
+
+  private makeValue(text: [BlockValueType, string]): Value {
+    const newValue: Value = createValue();
+    newValue.type = text[0];
+    newValue.content = text[1];
+    switch (text[0]) {
+      case BlockValueType.text:
+        newValue.color = BlockValueColor.Normal;
+        newValue.content = text[1];
+        break;
+      case BlockValueType.exampleText:
+        newValue.color = BlockValueColor.Blue;
+        newValue.content = text[1];
+        break;
+      case BlockValueType.warningText:
+        newValue.color = BlockValueColor.Red;
+        newValue.content = text[1];
+        break;
+      case BlockValueType.referenceText:
+        newValue.color = BlockValueColor.Green;
+        newValue.content = text[1];
+        break;
+    }
+    return newValue;
+  }
+
+  private makeNoteLine(block: string): NoteLine | null {
+    // TODO: 分割符號先使用 '/'
+    const twoParts = Utility.DivideStringWithSymbol(block, "/");
+
+    // TODO: 將Values分成更細微value
+    if (!Utility.IsNullorUndefined(twoParts)) {
+      const newNoteLine: NoteLine = createNoteLine();
+      // Make Key
+      newNoteLine.key = twoParts[0];
+
+      // Make Value
+      const matchPatterns = this.divideStringWithPattern(twoParts[1]);
+      matchPatterns?.forEach((pattern) => {
+        newNoteLine.values.push(this.makeValue(pattern));
+      });
+
+      return newNoteLine;
+    }
+
+    return null;
+  }
 }
 class ChromeStorageProcessor {
   public getData<T>(key: string): T | null {
@@ -279,7 +354,12 @@ export interface NoteLine {
   key: string;
   values: Value[]; //區塊內容
 }
-
+export function createNoteLine() {
+  return {
+    key: "",
+    values: [],
+  };
+}
 enum BlockValueColor {
   Normal,
   Red,
@@ -299,6 +379,14 @@ export interface Value {
   type: BlockValueType; //單行類型
   content: string; //單行內容
 }
+export function createValue() {
+  return {
+    color: BlockValueColor.Normal,
+    type: BlockValueType.text,
+    content: "",
+  };
+}
+
 export const DEFAULT_VALUE: Value = {
   color: BlockValueColor.Normal,
   type: BlockValueType.text,

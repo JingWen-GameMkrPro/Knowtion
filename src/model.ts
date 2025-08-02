@@ -74,9 +74,38 @@ export class Model {
   }
 
   public TransformNotionPageBlocksAsOriginData(json: any): OriginData {
-    var originData: OriginData = DEFAULT_ORIGIN_DATA;
-    originData.notionPageBlocks = json;
+    var originData: OriginData = {
+      notionPageBlocks: [],
+    };
+
+    json.forEach((block: any) => {
+      if (block.type == "paragraph" && block.paragraph.rich_text.length !== 0) {
+        const richTexts = block.paragraph.rich_text.map((text: any) => text.plain_text);
+        const combinedText = richTexts.join("");
+        originData.notionPageBlocks.push(combinedText);
+      }
+    });
     return originData;
+  }
+
+  public TransformOriginDataAsNote(originData: OriginData): Note {
+    var note: Note = DEFAULT_NOTE;
+    originData.notionPageBlocks.forEach((block) => {
+      // TODO: 分割符號先使用 '/'
+      const twoParts = Utility.DivideTextWithSymbol(block, "/");
+
+      // TODO: 將Values分成更細微value
+      if (!Utility.IsNullorUndefined(twoParts)) {
+        const newValue = DEFAULT_VALUE;
+        newValue.content = twoParts[1];
+        const newNoteLine: NoteLine = {
+          key: twoParts[0],
+          values: [newValue],
+        };
+        note.noteBlocks.push(newNoteLine);
+      }
+    });
+    return note;
   }
 
   async fetchNotionPageBlocks(notionApi: string, notionPageId: string): Promise<any> {
@@ -114,7 +143,6 @@ export class Model {
         hasMore = data.has_more;
         nextCursor = data.next_cursor;
       }
-
       return blocks;
     } catch (error) {
       console.error("Error fetching Notion page blocks:", error);
@@ -241,24 +269,19 @@ export const DEFAULT_ORIGIN_DATA: OriginData = {
 };
 
 export interface Note {
-  noteBlocks: Block[]; //筆記內容
+  noteBlocks: NoteLine[]; //筆記內容
 }
 export const DEFAULT_NOTE: Note = {
   noteBlocks: [],
 };
 
-export interface Block {
+export interface NoteLine {
   key: string;
-  allValues: Value[]; //區塊內容
-}
-
-export interface Value {
-  color: BlockValueColor; //單行顏色
-  type: BlockValueType; //單行類型
-  content: string; //單行內容
+  values: Value[]; //區塊內容
 }
 
 enum BlockValueColor {
+  Normal,
   Red,
   Blue,
   Green,
@@ -270,3 +293,14 @@ enum BlockValueType {
   warningText,
   exampleText,
 }
+
+export interface Value {
+  color: BlockValueColor; //單行顏色
+  type: BlockValueType; //單行類型
+  content: string; //單行內容
+}
+export const DEFAULT_VALUE: Value = {
+  color: BlockValueColor.Normal,
+  type: BlockValueType.text,
+  content: "",
+};

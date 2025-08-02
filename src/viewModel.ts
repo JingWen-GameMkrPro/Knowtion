@@ -28,7 +28,7 @@ export class ViewModel {
     //加工
     var newNoteInfo = this.model_.TransformNotionPageInfoAsNoteInfo(infoJson);
     var newOrinData = this.model_.TransformNotionPageBlocksAsOriginData(blocksJson);
-    var newNote = null;
+    var newNote = this.model_.TransformOriginDataAsNote(newOrinData);
 
     //儲存
     var storageObject = this.model_.GetStorageObject();
@@ -37,7 +37,7 @@ export class ViewModel {
       this.model_.UserSetStorageObject(storageObject);
     }
 
-    // 資料庫更新
+    // DEBUG: 資料庫更新
     console.log(storageObject);
   }
 

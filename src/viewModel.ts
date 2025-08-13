@@ -10,8 +10,8 @@ export class ViewModel {
     this.model_.SubscribeStorageObject((newValue) => this.onStorageObjectUpdate(newValue));
   }
 
-  public GetStorageObject() {
-    return this.model_.GetStorageObject();
+  public async GetStorageObject() {
+    return await this.model_.GetStorageObject();
   }
 
   public SubscribeStorageObject(callback: (newValue: T.StorageObject) => void): void {
@@ -32,7 +32,7 @@ export class ViewModel {
     var newNote = this.model_.TransformOriginDataAsNote(newOrinData);
 
     //儲存
-    var storageObject = this.model_.GetStorageObject();
+    var storageObject = await this.model_.GetStorageObject();
     if (storageObject && newNoteInfo && newOrinData && newNote) {
       storageObject.noteList[storageObject.noteListIndex] = [newNoteInfo, newOrinData, newNote];
       this.model_.UserSetStorageObject(storageObject);
@@ -46,8 +46,8 @@ export class ViewModel {
     this.model_.ClearStorageObject();
   }
 
-  public ClickNextBtn() {
-    var storageObject = this.model_.GetStorageObject();
+  public async ClickNextBtn() {
+    var storageObject = await this.model_.GetStorageObject();
     if (storageObject) {
       storageObject.noteListIndex =
         storageObject.noteListIndex + 1 > storageObject.noteList.length - 1
@@ -57,8 +57,8 @@ export class ViewModel {
     }
   }
 
-  public ClickBackBtn() {
-    var storageObject = this.model_.GetStorageObject();
+  public async ClickBackBtn() {
+    var storageObject = await this.model_.GetStorageObject();
     if (storageObject) {
       storageObject.noteListIndex =
         storageObject.noteListIndex - 1 < 0 ? 0 : storageObject.noteListIndex - 1;
@@ -66,8 +66,8 @@ export class ViewModel {
     }
   }
 
-  public ClickAddBtn() {
-    var storageObject = this.model_.GetStorageObject();
+  public async ClickAddBtn() {
+    var storageObject = await this.model_.GetStorageObject();
     if (storageObject) {
       storageObject.noteList.push([T.DEFAULT_NOTE_INFO, T.DEFAULT_ORIGIN_DATA, T.DEFAULT_NOTE]);
       storageObject.noteListIndex = storageObject.noteList.length - 1;
@@ -75,29 +75,36 @@ export class ViewModel {
     }
   }
 
-  public ClickDebugBtn() {
-    console.log(this.model_.GetStorageObject());
+  public async ClickDebugBtn() {
+    console.log(await this.model_.GetStorageObject());
   }
 
-  public ClickDebug2Btn() {
-    var storageObject = this.model_.GetStorageObject();
+  public async ClickDebug2Btn() {
+    var storageObject = await this.model_.GetStorageObject();
     const allNote: T.Note[] = (storageObject?.noteList || []).map(([info, origin, note]) => note);
     var newTrie = this.model_.rebuildTrie(allNote);
     storageObject!.trie = newTrie;
     this.model_.UserSetStorageObject(storageObject!);
-    console.log(this.model_.GetStorageObject());
+    console.log(await this.model_.GetStorageObject());
+  }
+  public ClickDebug3Btn() {
+    chrome.runtime.sendMessage({ action: "NOTIFY_BACKGROUND" }, (response: String) => {
+      if (response) {
+        console.log("Received background message");
+      }
+    });
   }
 
-  public UserSetNotionApiField(newValue: string) {
-    var storageObject = this.model_.GetStorageObject();
+  public async UserSetNotionApiField(newValue: string) {
+    var storageObject = await this.model_.GetStorageObject();
     if (storageObject) {
       storageObject.notionApi = newValue;
       this.model_.UserSetStorageObject(storageObject);
     }
   }
 
-  public UserSetNotionPageIdField(newValue: string) {
-    var storageObject = this.model_.GetStorageObject();
+  public async UserSetNotionPageIdField(newValue: string) {
+    var storageObject = await this.model_.GetStorageObject();
     if (storageObject) {
       storageObject.noteList[storageObject.noteListIndex][0].pageId = newValue;
       this.model_.UserSetStorageObject(storageObject);

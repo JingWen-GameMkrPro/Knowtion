@@ -15,34 +15,44 @@ export function DivideStringWithSymbol(value: string, symbol: string): [string, 
   return null;
 }
 
-export function getChromeData<T>(key: string): T | null {
+/**
+ * 從 chrome.storage.local 讀取資料。
+ * @template T 讀取資料的預期型別。
+ * @param {string} key 要讀取的資料鍵值。
+ * @returns {Promise<T | null>} 包含資料的 Promise，如果沒有找到或發生錯誤則回傳 null。
+ */
+export async function getChromeData<T>(key: string): Promise<T | null> {
   try {
-    const result = localStorage.getItem(key);
-    if (result) {
-      // 解析 JSON 字串為Object
-      const data = JSON.parse(result);
-      return data as T;
+    const result = await chrome.storage.local.get(key);
+    // chrome.storage.get 回傳一個物件，鍵為 key，值為儲存的資料
+    if (result[key] !== undefined) {
+      // 在這裡不需要 JSON.parse，因為 chrome.storage.local.get 會自動處理
+      return result[key] as T;
     }
   } catch (e) {
-    console.error("讀取 localStorage 失敗或資料損壞:", e);
+    console.error("讀取 chrome.storage 失敗:", e);
   }
   return null;
 }
 
-export function setChromeData<T>(key: string, value: T): void {
+export async function setChromeData<T>(key: string, value: T): Promise<void> {
   try {
-    // localStorage 只能儲存字串，所以需要將物件或值轉換為 JSON 字串
-    const data = JSON.stringify(value);
-    localStorage.setItem(key, data);
+    // chrome.storage API 可以直接儲存物件，不需要 JSON.stringify
+    await chrome.storage.local.set({ [key]: value });
   } catch (e) {
-    console.error(`儲存到 localStorage 失敗 (鍵: "${key}"):`, e);
+    console.error(`儲存到 chrome.storage 失敗 (鍵: "${key}"):`, e);
   }
 }
 
-export function clearChromeData(key: string): void {
+/**
+ * 從 chrome.storage.local 移除資料。
+ * @param {string} key 要移除的資料鍵值。
+ * @returns {Promise<void>} 移除操作完成後解析的 Promise。
+ */
+export async function clearChromeData(key: string): Promise<void> {
   try {
-    localStorage.removeItem(key);
+    await chrome.storage.local.remove(key);
   } catch (e) {
-    console.error("清除 localStorage 失敗:", e);
+    console.error("清除 chrome.storage 失敗:", e);
   }
 }

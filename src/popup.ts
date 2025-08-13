@@ -1,7 +1,7 @@
 import * as T from "./commonType";
 import { ViewModel } from "./viewModel";
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const viewModel_ = new ViewModel();
 
   const inputNotionApi = document.getElementById("inputNotionApi") as HTMLInputElement;
@@ -41,6 +41,11 @@ document.addEventListener("DOMContentLoaded", () => {
   btnDebug2.addEventListener("click", () => {
     viewModel_.ClickDebug2Btn();
   });
+  const btnDebug3 = document.getElementById("btnDebug3") as HTMLButtonElement;
+  btnDebug3.addEventListener("click", () => {
+    viewModel_.ClickDebug3Btn();
+  });
+
   const btnNext = document.getElementById("btnNext") as HTMLButtonElement;
   btnNext.addEventListener("click", () => {
     viewModel_.ClickNextBtn();
@@ -55,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Init
-  var object = viewModel_.GetStorageObject();
+  var object = await viewModel_.GetStorageObject();
   if (object) {
     inputNotionApi.value = object.notionApi;
     inputNotionPageId.value = object.noteList[object.noteListIndex][0].pageId;

@@ -9,20 +9,23 @@ export class Model {
     this.notify(newValue);
   }
 
-  public GetStorageObject(): T.StorageObject | null {
-    var data = Util.getChromeData<T.StorageObject>(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT);
+  public async GetStorageObject(): Promise<T.StorageObject> {
+    // 使用 await 等待非同步操作完成，取得實際資料
+    let data = await Util.getChromeData<T.StorageObject>(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT);
 
     // 本地端第一次使用插件
     if (!data) {
       data = this.setDefaultStorageObject();
+      // 在設定預設值後，也應該將其存回儲存空間
+      await Util.setChromeData(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT, data);
     }
 
     return data;
   }
 
-  public ClearStorageObject() {
+  public async ClearStorageObject() {
     Util.clearChromeData(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT);
-    var newValue = this.GetStorageObject();
+    var newValue = await this.GetStorageObject();
     if (newValue) {
       this.notify(newValue);
     }
@@ -33,7 +36,7 @@ export class Model {
   }
 
   public async FetchNotionPageInfo() {
-    var storageObject = this.GetStorageObject();
+    var storageObject = await this.GetStorageObject();
     var notionApi = storageObject?.notionApi;
     var noteListIndex = storageObject?.noteListIndex;
     var noteList = storageObject?.noteList;
@@ -48,7 +51,7 @@ export class Model {
   }
 
   public async FetchNotionPageBlocks() {
-    var storageObject = this.GetStorageObject();
+    var storageObject = await this.GetStorageObject();
     var notionApi = storageObject?.notionApi;
     var noteListIndex = storageObject?.noteListIndex;
     var noteList = storageObject?.noteList;

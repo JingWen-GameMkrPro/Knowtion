@@ -10,7 +10,7 @@ export function CreateTrieNode(): TrieNode {
   return {
     children: {},
     values: [],
-    isEnd: true,
+    isEnd: false,
   };
 }
 
@@ -117,10 +117,25 @@ export interface Value {
   type: BlockValueType; //單行類型
   content: string; //單行內容
 }
-export function CreateValue() {
+export function CreateValue(): Value {
   return {
     color: BlockValueColor.Normal,
     type: BlockValueType.text,
     content: "",
+  };
+}
+
+export interface HtmlMatchInfo {
+  startIndex: number;
+  endIndex: number;
+  key: string;
+  values: Value[][];
+}
+export function CreateHtmlMatchInfo(): HtmlMatchInfo {
+  return {
+    startIndex: 0,
+    endIndex: 0,
+    key: "",
+    values: [],
   };
 }

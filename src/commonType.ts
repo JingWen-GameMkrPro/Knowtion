@@ -37,6 +37,19 @@ export function InsertTrie(trie: Trie, noteLine: NoteLine) {
   currentNode.values.push(noteLine.values);
 }
 
+export function SearchTrie(trie: Trie, key: string): Value[][] | null {
+  let currentNode: TrieNode = trie.root;
+  for (const char of key) {
+    if (!currentNode.children[char]) {
+      // Can not find it
+      return null;
+    }
+    currentNode = currentNode.children[char];
+  }
+
+  return currentNode.values;
+}
+
 // 要儲存到chrome storage的所有資料
 export interface StorageObject {
   // USER SETTING

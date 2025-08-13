@@ -88,19 +88,18 @@ function highlightMatches(node: Text, matches: T.HtmlMatchInfo[], trie: T.Trie):
     span.className = "highlight";
     span.style.backgroundColor = "yellow";
 
-    // Add mouseover event listener for the tooltip.
-    // span.addEventListener("mouseover", (e: MouseEvent) => {
-    //   const toolTip = getSharedTooltip();
-    //   // Assuming constructTipByInfos and getSharedTooltip are defined elsewhere
-    //   toolTip.innerHTML = constructTipByInfos(key, values, trie);
+    span.addEventListener("mouseover", (e: MouseEvent) => {
+      const toolTip = getSharedTooltip();
+      // Assuming constructTipByInfos and getSharedTooltip are defined elsewhere
+      toolTip.innerHTML = constructTipByValues(key, values, trie);
 
-    //   let posX = e.pageX;
-    //   let posY = e.pageY + 10;
-    //   toolTip.style.left = posX + "px";
-    //   toolTip.style.top = posY + "px";
-    //   toolTip.style.opacity = "1";
-    //   setTimeout(adjustTooltipPosition, 0);
-    // });
+      let posX = e.pageX;
+      let posY = e.pageY + 10;
+      toolTip.style.left = posX + "px";
+      toolTip.style.top = posY + "px";
+      toolTip.style.opacity = "1";
+      setTimeout(adjustTooltipPosition, 0);
+    });
 
     // Add mouseout event listener to hide the tooltip.
     // span.addEventListener("mouseout", () => {
@@ -122,3 +121,139 @@ function highlightMatches(node: Text, matches: T.HtmlMatchInfo[], trie: T.Trie):
     node.parentNode.replaceChild(domCopy, node);
   }
 }
+
+function adjustTooltipPosition(): void {
+  const tooltip = getSharedTooltip();
+  const rect: DOMRect = tooltip.getBoundingClientRect();
+  let currentLeft: number = parseInt(tooltip.style.left, 10) || 0;
+  let currentTop: number = parseInt(tooltip.style.top, 10) || 0;
+  const margin: number = 10;
+
+  if (rect.right > window.innerWidth) {
+    currentLeft -= rect.right - window.innerWidth + margin;
+  }
+  if (rect.left < 0) {
+    currentLeft = margin;
+  }
+  if (rect.bottom > window.innerHeight) {
+    currentTop -= rect.bottom - window.innerHeight + margin;
+  }
+  if (rect.top < 0) {
+    currentTop = margin;
+  }
+
+  tooltip.style.left = `${currentLeft}px`;
+  tooltip.style.top = `${currentTop}px`;
+}
+declare global {
+  interface Window {
+    sharedTooltip: HTMLDivElement;
+  }
+}
+
+function getSharedTooltip(): HTMLDivElement {
+  if (!window.sharedTooltip) {
+    const tooltip = document.createElement("div");
+    tooltip.className = "shared-tooltip";
+    tooltip.style.position = "absolute";
+    tooltip.style.padding = "8px 12px";
+    tooltip.style.background = "linear-gradient(135deg, #000000, #1a1a1a)";
+    tooltip.style.color = "#f0f0f0";
+    tooltip.style.borderRadius = "8px";
+    tooltip.style.fontSize = "14px";
+    tooltip.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    tooltip.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.5)";
+    tooltip.style.zIndex = "10000";
+    tooltip.style.pointerEvents = "none";
+    tooltip.style.whiteSpace = "pre-line";
+    tooltip.style.transition = "opacity 0.2s ease";
+    tooltip.style.opacity = "0";
+    document.body.appendChild(tooltip);
+    window.sharedTooltip = tooltip;
+  }
+  return window.sharedTooltip;
+}
+
+function constructTipByValues(key: string, valuess: T.Value[][], trie: T.Trie): string {
+  let tip = `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold;">${key}</div>`;
+  tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
+
+  valuess.forEach((values, i) => {
+    if (i > 0) {
+      tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
+    }
+
+    values.forEach((value) => {
+      switch (value.type) {
+        case T.BlockValueType.text:
+          tip += `<div style="padding:2px 0;">${value.content}</div>`;
+          break;
+        case T.BlockValueType.referenceText: {
+          if (key === value.content) {
+            break;
+          }
+          const refNode = T.SearchTrie(trie, value.content);
+          if (refNode !== null) {
+            tip += `<div style="background-color: ${tipColorMap.GREEN}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
+            refNode.forEach((refInfosObject) => {
+              refInfosObject.forEach((subInfo) => {
+                switch (subInfo.type) {
+                  case T.BlockValueType.referenceText:
+                  case T.BlockValueType.warningText:
+                    break;
+                  case T.BlockValueType.text:
+                    tip += `<div style="padding:2px 0;">${subInfo.content}</div>`;
+                    break;
+                  case T.BlockValueType.exampleText:
+                    tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${subInfo.content}</div>`;
+                    break;
+                }
+              });
+            });
+            tip += `</div>`;
+          }
+          break;
+        }
+        case T.BlockValueType.warningText: {
+          if (key === value.content) {
+            break;
+          }
+          const noticeNode = T.SearchTrie(trie, value.content);
+          if (noticeNode !== null) {
+            tip += `<div style="background-color: ${tipColorMap.RED}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
+            noticeNode.forEach((noticeInfosObject) => {
+              noticeInfosObject.forEach((subInfo) => {
+                switch (subInfo.type) {
+                  case T.BlockValueType.referenceText:
+                  case T.BlockValueType.warningText:
+                    break;
+                  case T.BlockValueType.text:
+                    tip += `<div style="padding:2px 0;">${subInfo.content}</div>`;
+                    break;
+                  case T.BlockValueType.exampleText:
+                    tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${subInfo.content}</div>`;
+                    break;
+                }
+              });
+            });
+            tip += `</div>`;
+          }
+          break;
+        }
+        case T.BlockValueType.exampleText:
+          tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${value.content}</div>`;
+          break;
+        default:
+          console.error("This info doesn't have a valid type: ", value);
+          break;
+      }
+    });
+  });
+
+  return tip;
+}
+const tipColorMap = {
+  GREEN: "rgb(0, 69, 0)",
+  RED: "rgb(92, 0, 0)",
+  BLUE: "rgb(0, 32, 65)",
+};

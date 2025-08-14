@@ -1,110 +1,180 @@
-import * as Util from "./utility";
+import * as B from "./commonBehavior";
 import * as T from "./commonType";
 
 export class Model {
-  private subscriberStorageObject_: ((newValue: T.StorageObject) => void)[] = [];
-
-  public UserSetStorageObject(newValue: T.StorageObject): void {
-    Util.setChromeData<T.StorageObject>(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT, newValue);
-    this.notify(newValue);
+  constructor() {
+    this.WatchChromeSaveDataNotes(this.updateTrie);
   }
 
-  public async GetStorageObject(): Promise<T.StorageObject> {
-    // 使用 await 等待非同步操作完成，取得實際資料
-    let data = await Util.getChromeData<T.StorageObject>(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT);
+  /**
+   * Chrome
+   */
 
-    // 本地端第一次使用插件
-    if (!data) {
-      data = this.setDefaultStorageObject();
-      // 在設定預設值後，也應該將其存回儲存空間
-      await Util.setChromeData(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT, data);
+  // Chrome: init save data
+  public async InitChromeSaveData(): Promise<void> {
+    const initValue = await B.InitChromeSaveData();
+    this.notifyChromeSaveDataWatcher(initValue);
+  }
+
+  // Chrome: get save data
+  private async getChromeSaveData(): Promise<T.ChromeSaveData> {
+    let saveData = await B.GetChromeSaveData();
+
+    // Local first time to use
+    if (saveData == null) {
+      saveData = await B.InitChromeSaveData();
     }
 
-    return data;
+    return saveData;
   }
 
-  public async ClearStorageObject() {
-    Util.clearChromeData(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT);
-    var newValue = await this.GetStorageObject();
-    if (newValue) {
-      this.notify(newValue);
-    }
+  // Chrome: set save data
+  private async setChromeSaveData(newValue: T.ChromeSaveData): Promise<void> {
+    await B.SetChromeSaveData(newValue);
+    this.notifyChromeSaveDataWatcher(newValue);
   }
 
-  public SubscribeStorageObject(callback: (newValue: T.StorageObject) => void): void {
-    this.subscriberStorageObject_.push(callback);
+  // UserInput: update current note
+  public async UpdateCurrentNote(newNote: T.Note) {
+    const saveData = await this.getChromeSaveData();
+    saveData.notes[saveData.noteIndex] = newNote;
+    await this.setChromeSaveData(saveData);
+    this.notifyChromeSaveDataNotesWatcher(saveData.notes);
   }
 
-  public async FetchNotionPageInfo() {
-    var storageObject = await this.GetStorageObject();
-    var notionApi = storageObject?.notionApi;
-    var noteListIndex = storageObject?.noteListIndex;
-    var noteList = storageObject?.noteList;
+  // UserInput: add new note
+  public async AddNewNote() {
+    var saveData = await this.getChromeSaveData();
+    saveData.notes.push(T.CreateNote());
+    saveData.noteIndex = saveData.notes.length - 1;
+    await this.setChromeSaveData(saveData);
+  }
 
-    if (Util.IsAnyNullOrUndefined(notionApi, noteListIndex, noteList)) {
-      return;
-    }
+  // UserInput: next current index
+  public async NextNoteIndex() {
+    const saveData = await this.getChromeSaveData();
+    saveData.noteIndex =
+      saveData.noteIndex + 1 > saveData.notes.length - 1
+        ? saveData.notes.length - 1
+        : saveData.noteIndex + 1;
+    await this.setChromeSaveData(saveData);
+  }
 
-    var json = await this.fetchNotionPageInfo(notionApi!, noteList![noteListIndex!][0].pageId);
+  // UserInput: back current index
+  public async BackNoteIndex() {
+    const saveData = await this.getChromeSaveData();
+    saveData.noteIndex = saveData.noteIndex - 1 < 0 ? 0 : saveData.noteIndex - 1;
+    await this.setChromeSaveData(saveData);
+  }
+
+  // UserInput: update notion api
+  public async UpdateNotionApi(newValue: string) {
+    const saveData = await this.getChromeSaveData();
+    saveData.notionApi = newValue;
+    await this.setChromeSaveData(saveData);
+  }
+
+  // UserInput: update notion page id
+  public async UpdateCurrentNoteNotionPageId(newValue: string) {
+    const saveData = await this.getChromeSaveData();
+    saveData.notes[saveData.noteIndex].notionPageInfo.pageId = newValue;
+    await this.setChromeSaveData(saveData);
+  }
+
+  // NOTE: trigger when note updated
+  private updateTrie = async (newNotes: T.Note[]): Promise<void> => {
+    const saveData = await this.getChromeSaveData();
+    const blockCollection = newNotes.flatMap((note) => note.blocks);
+    saveData.trie = this.makeTrie(blockCollection);
+    await this.setChromeSaveData(saveData);
+  };
+  /**
+   * Subscribe
+   */
+  chromeSaveDataWatcher_: ((newValue: T.ChromeSaveData) => void)[] = [];
+  chromeSaveDataNotesWatcher_: ((newValue: T.Note[]) => void)[] = [];
+
+  public async WatchChromeSaveData(callback: (newValue: T.ChromeSaveData) => void): Promise<void> {
+    this.chromeSaveDataWatcher_.push(callback);
+
+    // NOTE: Initial
+    callback(await this.getChromeSaveData());
+  }
+
+  public WatchChromeSaveDataNotes(callback: (newValue: T.Note[]) => void): void {
+    this.chromeSaveDataNotesWatcher_.push(callback);
+  }
+
+  private notifyChromeSaveDataWatcher(newValue: T.ChromeSaveData): void {
+    this.chromeSaveDataWatcher_.forEach((callback) => callback(newValue));
+  }
+
+  private notifyChromeSaveDataNotesWatcher(newValue: T.Note[]): void {
+    this.chromeSaveDataNotesWatcher_.forEach((callback) => callback(newValue));
+  }
+
+  /**
+   * Notion
+   */
+  public async FetchNotionPageInfo(): Promise<any | null> {
+    const saveData = await this.getChromeSaveData();
+    const notionApi = saveData?.notionApi;
+    const pageId = saveData?.notes[saveData?.noteIndex].notionPageInfo.pageId;
+
+    const json = await this.fetchNotionPageInfo(notionApi, pageId);
 
     return json ? json : null;
   }
 
-  public async FetchNotionPageBlocks() {
-    var storageObject = await this.GetStorageObject();
-    var notionApi = storageObject?.notionApi;
-    var noteListIndex = storageObject?.noteListIndex;
-    var noteList = storageObject?.noteList;
+  public async FetchNotionPage(): Promise<any | null> {
+    const saveData = await this.getChromeSaveData();
+    const notionApi = saveData?.notionApi;
+    const pageId = saveData?.notes[saveData?.noteIndex].notionPageInfo.pageId;
 
-    if (Util.IsAnyNullOrUndefined(notionApi, noteListIndex, noteList)) {
-      return;
-    }
-
-    var json = await this.fetchNotionPageBlocks(notionApi!, noteList![noteListIndex!][0].pageId);
+    const json = await this.fetchNotionPage(notionApi, pageId);
 
     return json ? json : null;
   }
 
-  public TransformNotionPageInfoAsNoteInfo(json: any): T.NoteInfo {
-    var noteInfo: T.NoteInfo = T.DEFAULT_NOTE_INFO;
+  public transformJsonAsNotionPageInfo(json: any): T.NotionPageInfo {
+    const noteInfo = T.CreateNotionPageInfo();
+
     noteInfo.fetchTime = Date.now();
     noteInfo.lastEditedTime = new Date(json.last_edited_time).getTime();
     noteInfo.pageId = json.id;
     noteInfo.title = json.properties.Name.title[0].plain_text;
+
     return noteInfo;
   }
 
-  public TransformNotionPageBlocksAsOriginData(json: any): T.OriginData {
-    var originData: T.OriginData = {
-      notionPageBlocks: [],
-    };
+  public transformJsonAsNotionPage(json: any): T.NotionPage {
+    const newNotionPage = T.CreateNotionPage();
 
     json.forEach((block: any) => {
       if (block.type == "paragraph" && block.paragraph.rich_text.length !== 0) {
         const richTexts = block.paragraph.rich_text.map((text: any) => text.plain_text);
         const combinedText = richTexts.join("");
-        originData.notionPageBlocks.push(combinedText);
+        newNotionPage.notionBlocks.push(combinedText);
       }
     });
-    return originData;
+
+    return newNotionPage;
   }
 
-  public TransformOriginDataAsNote(originData: T.OriginData): T.Note {
-    var note: T.Note = {
-      ...T.DEFAULT_NOTE,
-      noteBlocks: [],
-    };
+  public createBlocksByNotionPage(notionPage: T.NotionPage): T.Block[] {
+    const newBlocks: T.Block[] = [];
 
-    originData.notionPageBlocks.forEach((block) => {
-      const newNoteLine = this.makeNoteLine(block);
-      if (!Util.IsNullorUndefined(newNoteLine)) {
-        note.noteBlocks.push(newNoteLine);
+    notionPage.notionBlocks.forEach((block) => {
+      const newBlock = this.makeBlockByNotionBlock(block);
+      if (!B.IsNullorUndefined(newBlock)) {
+        newBlocks.push(newBlock);
       }
     });
-    return note;
+
+    return newBlocks;
   }
 
-  async fetchNotionPageBlocks(notionApi: string, notionPageId: string): Promise<any> {
+  private async fetchNotionPage(notionApi: string, notionPageId: string): Promise<any> {
     const blocks: any[] = [];
     let nextCursor: string | null = null;
     let hasMore = true;
@@ -146,7 +216,7 @@ export class Model {
     }
   }
 
-  async fetchNotionPageInfo(notionApi: string, notionPageId: string): Promise<any> {
+  private async fetchNotionPageInfo(notionApi: string, notionPageId: string): Promise<any> {
     const url = `https://api.notion.com/v1/pages/${notionPageId}`;
     try {
       const response = await fetch(url, {
@@ -168,27 +238,6 @@ export class Model {
       console.error("Error fetching Notion page info:", error);
       return null;
     }
-  }
-
-  private notify(newValue: T.StorageObject): void {
-    this.subscriberStorageObject_.forEach((callback) => callback(newValue));
-  }
-
-  private setDefaultStorageObject(): T.StorageObject {
-    var defaultObject: T.StorageObject = {
-      notionApi: "Default",
-
-      isHighlight: false,
-
-      noteListIndex: 0,
-      // NOTE
-      noteList: [[T.DEFAULT_NOTE_INFO, T.DEFAULT_ORIGIN_DATA, T.DEFAULT_NOTE]],
-
-      trie: T.CreateTrie(),
-    };
-    Util.setChromeData(T.LOCAL_STORAGE_KEY.STORAGE_OBJECT, defaultObject);
-
-    return defaultObject;
   }
 
   private divideStringWithPattern(value: string): [T.BlockValueType, string][] {
@@ -224,59 +273,56 @@ export class Model {
     return result;
   }
 
-  private makeValue(text: [T.BlockValueType, string]): T.Value {
-    const newValue: T.Value = T.CreateValue();
+  private makeBlockValue(text: [T.BlockValueType, string]): T.BlockValue {
+    const newValue = T.CreateBlockValue();
     newValue.type = text[0];
-    newValue.content = text[1];
+    newValue.value = text[1];
     switch (text[0]) {
       case T.BlockValueType.text:
         newValue.color = T.BlockValueColor.Normal;
-        newValue.content = text[1];
+        newValue.value = text[1];
         break;
       case T.BlockValueType.exampleText:
         newValue.color = T.BlockValueColor.Blue;
-        newValue.content = text[1];
+        newValue.value = text[1];
         break;
       case T.BlockValueType.warningText:
         newValue.color = T.BlockValueColor.Red;
-        newValue.content = text[1];
+        newValue.value = text[1];
         break;
       case T.BlockValueType.referenceText:
         newValue.color = T.BlockValueColor.Green;
-        newValue.content = text[1];
+        newValue.value = text[1];
         break;
     }
     return newValue;
   }
 
-  private makeNoteLine(block: string): T.NoteLine | null {
+  private makeBlockByNotionBlock(notionBlock: string): T.Block | null {
     // TODO: 分割符號先使用 '/'
-    const twoParts = Util.DivideStringWithSymbol(block, "/");
+    const twoParts = B.DivideStringWithSymbol(notionBlock, "/");
 
     // TODO: 將Values分成更細微value
-    if (!Util.IsNullorUndefined(twoParts)) {
-      const newNoteLine: T.NoteLine = T.CreateNoteLine();
-      // Make Key
-      newNoteLine.key = twoParts[0];
+    if (!B.IsNullorUndefined(twoParts)) {
+      const newBlock = T.CreateBlock();
 
-      // Make Value
+      newBlock.blockKey = twoParts[0];
+
       const matchPatterns = this.divideStringWithPattern(twoParts[1]);
       matchPatterns?.forEach((pattern) => {
-        newNoteLine.values.push(this.makeValue(pattern));
+        newBlock.blockValues.push(this.makeBlockValue(pattern));
       });
 
-      return newNoteLine;
+      return newBlock;
     }
 
     return null;
   }
 
-  public rebuildTrie(noteList: T.Note[]): T.Trie {
+  public makeTrie(blockCollection: T.Block[]): T.Trie {
     const newTrie = T.CreateTrie();
-    noteList.forEach((note) => {
-      note.noteBlocks.forEach((noteLine) => {
-        T.InsertTrie(newTrie, noteLine);
-      });
+    blockCollection.forEach((block) => {
+      T.InsertTrie(newTrie, block);
     });
     return newTrie;
   }

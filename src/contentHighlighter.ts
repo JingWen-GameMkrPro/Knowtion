@@ -39,8 +39,8 @@ export function ProcessHighlight(root: Node, trie: T.Trie): void {
   }
 }
 
-function collectMatchesInNode(text: string, trieRoot: T.TrieNode): T.HtmlMatchInfo[] {
-  const matches: T.HtmlMatchInfo[] = [];
+function collectMatchesInNode(text: string, trieRoot: T.TrieNode): HtmlMatchInfo[] {
+  const matches: HtmlMatchInfo[] = [];
   const lowerText = text.toLowerCase();
 
   for (let i = 0; i < lowerText.length; i++) {
@@ -52,11 +52,11 @@ function collectMatchesInNode(text: string, trieRoot: T.TrieNode): T.HtmlMatchIn
       }
       node = node.children[currentChar];
       if (node.isEnd) {
-        const newMatch = T.CreateHtmlMatchInfo();
+        const newMatch = CreateHtmlMatchInfo();
         newMatch.startIndex = i;
         newMatch.endIndex = j + 1;
         newMatch.key = lowerText.slice(i, j + 1);
-        newMatch.values = node.values;
+        newMatch.values = node.blockValuesCollection;
         matches.push(newMatch);
       }
     }
@@ -65,7 +65,7 @@ function collectMatchesInNode(text: string, trieRoot: T.TrieNode): T.HtmlMatchIn
   return matches;
 }
 
-function highlightMatches(node: Text, matches: T.HtmlMatchInfo[], trie: T.Trie): void {
+function highlightMatches(node: Text, matches: HtmlMatchInfo[], trie: T.Trie): void {
   // Sort matches to ensure they are processed in order and to handle nested matches correctly.
   matches.sort((a, b) => a.startIndex - b.startIndex || b.endIndex - a.endIndex);
 
@@ -174,7 +174,7 @@ function getSharedTooltip(): HTMLDivElement {
   return window.sharedTooltip;
 }
 
-function constructTipByValues(key: string, valuess: T.Value[][], trie: T.Trie): string {
+function constructTipByValues(key: string, valuess: T.BlockValue[][], trie: T.Trie): string {
   let tip = `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold;">${key}</div>`;
   tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
 
@@ -186,13 +186,13 @@ function constructTipByValues(key: string, valuess: T.Value[][], trie: T.Trie): 
     values.forEach((value) => {
       switch (value.type) {
         case T.BlockValueType.text:
-          tip += `<div style="padding:2px 0;">${value.content}</div>`;
+          tip += `<div style="padding:2px 0;">${value.value}</div>`;
           break;
         case T.BlockValueType.referenceText: {
-          if (key === value.content) {
+          if (key === value.value) {
             break;
           }
-          const refNode = T.SearchTrie(trie, value.content);
+          const refNode = T.SearchTrie(trie, value.value);
           if (refNode !== null) {
             tip += `<div style="background-color: ${tipColorMap.GREEN}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
             refNode.forEach((refInfosObject) => {
@@ -202,10 +202,10 @@ function constructTipByValues(key: string, valuess: T.Value[][], trie: T.Trie): 
                   case T.BlockValueType.warningText:
                     break;
                   case T.BlockValueType.text:
-                    tip += `<div style="padding:2px 0;">${subInfo.content}</div>`;
+                    tip += `<div style="padding:2px 0;">${subInfo.value}</div>`;
                     break;
                   case T.BlockValueType.exampleText:
-                    tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${subInfo.content}</div>`;
+                    tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${subInfo.value}</div>`;
                     break;
                 }
               });
@@ -215,10 +215,10 @@ function constructTipByValues(key: string, valuess: T.Value[][], trie: T.Trie): 
           break;
         }
         case T.BlockValueType.warningText: {
-          if (key === value.content) {
+          if (key === value.value) {
             break;
           }
-          const noticeNode = T.SearchTrie(trie, value.content);
+          const noticeNode = T.SearchTrie(trie, value.value);
           if (noticeNode !== null) {
             tip += `<div style="background-color: ${tipColorMap.RED}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
             noticeNode.forEach((noticeInfosObject) => {
@@ -228,10 +228,10 @@ function constructTipByValues(key: string, valuess: T.Value[][], trie: T.Trie): 
                   case T.BlockValueType.warningText:
                     break;
                   case T.BlockValueType.text:
-                    tip += `<div style="padding:2px 0;">${subInfo.content}</div>`;
+                    tip += `<div style="padding:2px 0;">${subInfo.value}</div>`;
                     break;
                   case T.BlockValueType.exampleText:
-                    tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${subInfo.content}</div>`;
+                    tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${subInfo.value}</div>`;
                     break;
                 }
               });
@@ -241,7 +241,7 @@ function constructTipByValues(key: string, valuess: T.Value[][], trie: T.Trie): 
           break;
         }
         case T.BlockValueType.exampleText:
-          tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${value.content}</div>`;
+          tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${value.value}</div>`;
           break;
         default:
           console.error("This info doesn't have a valid type: ", value);
@@ -257,3 +257,21 @@ const tipColorMap = {
   RED: "rgb(92, 0, 0)",
   BLUE: "rgb(0, 32, 65)",
 };
+
+/**
+ * HTML matching Content's info
+ */
+export interface HtmlMatchInfo {
+  startIndex: number;
+  endIndex: number;
+  key: string;
+  values: T.BlockValue[][];
+}
+export function CreateHtmlMatchInfo(): HtmlMatchInfo {
+  return {
+    startIndex: 0,
+    endIndex: 0,
+    key: "",
+    values: [],
+  };
+}

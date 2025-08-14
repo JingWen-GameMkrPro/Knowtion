@@ -3,19 +3,15 @@ import * as T from "./commonType";
 
 export class ViewModel {
   private model_: ModelTypes.Model;
-  private subscriberStorageObject_: ((newValue: T.StorageObject) => void)[] = [];
+  private ChromeSaveDataWatcher_: ((newValue: T.ChromeSaveData) => void)[] = [];
 
   constructor() {
     this.model_ = new ModelTypes.Model();
-    this.model_.SubscribeStorageObject((newValue) => this.onStorageObjectUpdate(newValue));
+    this.model_.WatchChromeSaveData((newValue) => this.onStorageObjectUpdate(newValue));
   }
 
-  public async GetStorageObject() {
-    return await this.model_.GetStorageObject();
-  }
-
-  public SubscribeStorageObject(callback: (newValue: T.StorageObject) => void): void {
-    this.subscriberStorageObject_.push(callback);
+  public WatchChromeSaveData(callback: (newValue: T.ChromeSaveData) => void): void {
+    this.ChromeSaveDataWatcher_.push(callback);
   }
 
   // 按下Update 按鈕後
@@ -24,69 +20,45 @@ export class ViewModel {
   public async ClickUpdateBtn() {
     // 獲得原始資料
     var infoJson = await this.model_.FetchNotionPageInfo();
-    var blocksJson = await this.model_.FetchNotionPageBlocks();
+    var blocksJson = await this.model_.FetchNotionPage();
 
     //加工
-    var newNoteInfo = this.model_.TransformNotionPageInfoAsNoteInfo(infoJson);
-    var newOrinData = this.model_.TransformNotionPageBlocksAsOriginData(blocksJson);
-    var newNote = this.model_.TransformOriginDataAsNote(newOrinData);
+    var newNoteInfo = this.model_.transformJsonAsNotionPageInfo(infoJson);
+    var newOrinData = this.model_.transformJsonAsNotionPage(blocksJson);
+    var newBlocks = this.model_.createBlocksByNotionPage(newOrinData);
 
     //儲存
-    var storageObject = await this.model_.GetStorageObject();
-    if (storageObject && newNoteInfo && newOrinData && newNote) {
-      storageObject.noteList[storageObject.noteListIndex] = [newNoteInfo, newOrinData, newNote];
-      this.model_.UserSetStorageObject(storageObject);
-    }
-
-    // DEBUG: 資料庫更新
-    console.log(storageObject);
+    const newNote = T.CreateNote();
+    newNote.notionPageInfo = newNoteInfo;
+    newNote.notionPage = newOrinData;
+    newNote.blocks = newBlocks;
+    this.model_.UpdateCurrentNote(newNote);
   }
 
   public ClickClearBtn() {
-    this.model_.ClearStorageObject();
+    // this.model_.ClearChromeSaveData();
   }
 
   public async ClickNextBtn() {
-    var storageObject = await this.model_.GetStorageObject();
-    if (storageObject) {
-      storageObject.noteListIndex =
-        storageObject.noteListIndex + 1 > storageObject.noteList.length - 1
-          ? storageObject.noteList.length - 1
-          : storageObject.noteListIndex + 1;
-      this.model_.UserSetStorageObject(storageObject);
-    }
+    this.model_.NextNoteIndex();
   }
 
   public async ClickBackBtn() {
-    var storageObject = await this.model_.GetStorageObject();
-    if (storageObject) {
-      storageObject.noteListIndex =
-        storageObject.noteListIndex - 1 < 0 ? 0 : storageObject.noteListIndex - 1;
-      this.model_.UserSetStorageObject(storageObject);
-    }
+    this.model_.BackNoteIndex();
   }
 
   public async ClickAddBtn() {
-    var storageObject = await this.model_.GetStorageObject();
-    if (storageObject) {
-      storageObject.noteList.push([T.DEFAULT_NOTE_INFO, T.DEFAULT_ORIGIN_DATA, T.DEFAULT_NOTE]);
-      storageObject.noteListIndex = storageObject.noteList.length - 1;
-      this.model_.UserSetStorageObject(storageObject);
-    }
+    this.model_.AddNewNote();
   }
 
   public async ClickDebugBtn() {
-    console.log(await this.model_.GetStorageObject());
+    // console.log(await this.model_.getChromeSaveData());
   }
 
   public async ClickDebug2Btn() {
-    var storageObject = await this.model_.GetStorageObject();
-    const allNote: T.Note[] = (storageObject?.noteList || []).map(([info, origin, note]) => note);
-    var newTrie = this.model_.rebuildTrie(allNote);
-    storageObject!.trie = newTrie;
-    this.model_.UserSetStorageObject(storageObject!);
-    console.log(await this.model_.GetStorageObject());
+    this.model_.InitChromeSaveData();
   }
+
   public ClickDebug3Btn() {
     chrome.runtime.sendMessage({ action: "NOTIFY_BACKGROUND" }, (response: String) => {
       if (response) {
@@ -95,27 +67,19 @@ export class ViewModel {
     });
   }
 
-  public async UserSetNotionApiField(newValue: string) {
-    var storageObject = await this.model_.GetStorageObject();
-    if (storageObject) {
-      storageObject.notionApi = newValue;
-      this.model_.UserSetStorageObject(storageObject);
-    }
+  public async UpdateNotionApi(newValue: string) {
+    this.model_.UpdateNotionApi(newValue);
   }
 
   public async UserSetNotionPageIdField(newValue: string) {
-    var storageObject = await this.model_.GetStorageObject();
-    if (storageObject) {
-      storageObject.noteList[storageObject.noteListIndex][0].pageId = newValue;
-      this.model_.UserSetStorageObject(storageObject);
-    }
+    this.model_.UpdateCurrentNoteNotionPageId(newValue);
   }
 
-  private onStorageObjectUpdate(newValue: T.StorageObject) {
+  private onStorageObjectUpdate(newValue: T.ChromeSaveData) {
     this.notify(newValue);
   }
 
-  private notify(newValue: T.StorageObject): void {
-    this.subscriberStorageObject_.forEach((callback) => callback(newValue));
+  private notify(newValue: T.ChromeSaveData): void {
+    this.ChromeSaveDataWatcher_.forEach((callback) => callback(newValue));
   }
 }

@@ -1,19 +1,3 @@
-import { IsNullorUndefined } from "./utility";
-
-export interface TrieNode {
-  children: { [key: string]: TrieNode };
-  values: Value[][];
-  isEnd: boolean;
-}
-
-export function CreateTrieNode(): TrieNode {
-  return {
-    children: {},
-    values: [],
-    isEnd: false,
-  };
-}
-
 export interface Trie {
   root: TrieNode;
 }
@@ -24,9 +8,22 @@ export function CreateTrie(): Trie {
   };
 }
 
-export function InsertTrie(trie: Trie, noteLine: NoteLine) {
+export interface TrieNode {
+  children: { [key: string]: TrieNode };
+  blockValuesCollection: BlockValue[][];
+  isEnd: boolean;
+}
+
+export function CreateTrieNode(): TrieNode {
+  return {
+    children: {},
+    blockValuesCollection: [],
+    isEnd: false,
+  };
+}
+export function InsertTrie(trie: Trie, noteLine: Block) {
   let currentNode: TrieNode = trie.root;
-  for (const char of noteLine.key) {
+  for (const char of noteLine.blockKey) {
     if (!currentNode.children[char]) {
       currentNode.children[char] = CreateTrieNode();
     }
@@ -34,10 +31,10 @@ export function InsertTrie(trie: Trie, noteLine: NoteLine) {
   }
 
   currentNode.isEnd = true;
-  currentNode.values.push(noteLine.values);
+  currentNode.blockValuesCollection.push(noteLine.blockValues);
 }
 
-export function SearchTrie(trie: Trie, key: string): Value[][] | null {
+export function SearchTrie(trie: Trie, key: string): BlockValue[][] | null {
   let currentNode: TrieNode = trie.root;
   for (const char of key) {
     if (!currentNode.children[char]) {
@@ -47,70 +44,97 @@ export function SearchTrie(trie: Trie, key: string): Value[][] | null {
     currentNode = currentNode.children[char];
   }
 
-  return currentNode.values;
+  return currentNode.blockValuesCollection;
 }
 
-// 要儲存到chrome storage的所有資料
-export interface StorageObject {
+export interface ChromeSaveData {
   // USER SETTING
   notionApi: string;
 
   isHighlight: boolean;
 
-  noteListIndex: number;
-  // NOTE
-  noteList: [NoteInfo, OriginData, Note][];
+  noteIndex: number;
+
+  notes: Note[];
 
   trie: Trie;
 }
 
-export const LOCAL_STORAGE_KEY = {
-  STORAGE_OBJECT: "storageObject",
-} as const;
+export function CreateChromeSaveData(): ChromeSaveData {
+  return {
+    notionApi: "",
+    isHighlight: false,
+    noteIndex: 0,
+    notes: [CreateNote()],
+    trie: CreateTrie(),
+  };
+}
 
-// Notion JSON 提取的 Page Info
-export interface NoteInfo {
-  pageId: string; //筆記ID
+// export const LOCAL_STORAGE_KEY = {
+//   STORAGE_OBJECT: "storageObject",
+// } as const;
 
-  title: string; //筆記標題
+export interface Note {
+  notionPageInfo: NotionPageInfo;
+  notionPage: NotionPage;
+  blocks: Block[];
+}
+
+export function CreateNote(): Note {
+  return {
+    notionPageInfo: CreateNotionPageInfo(),
+    notionPage: CreateNotionPage(),
+    blocks: [],
+  };
+}
+
+export interface NotionPageInfo {
+  pageId: string;
+
+  title: string;
 
   lastEditedTime: Number;
 
   fetchTime: Number;
 }
 
-export const DEFAULT_NOTE_INFO: NoteInfo = {
-  pageId: "Default",
-  title: "Default",
-  lastEditedTime: new Number(),
-  fetchTime: new Number(),
-};
-
-// Notion JSON 提取的 Blocks
-export interface OriginData {
-  notionPageBlocks: string[];
-}
-export const DEFAULT_ORIGIN_DATA: OriginData = {
-  notionPageBlocks: [],
-};
-
-export interface Note {
-  noteBlocks: NoteLine[]; //筆記內容
-}
-export const DEFAULT_NOTE: Note = {
-  noteBlocks: [],
-};
-
-export interface NoteLine {
-  key: string;
-  values: Value[]; //區塊內容
-}
-export function CreateNoteLine() {
+export function CreateNotionPageInfo(): NotionPageInfo {
   return {
-    key: "",
-    values: [],
+    pageId: "",
+    title: "",
+    lastEditedTime: new Number(),
+    fetchTime: new Number(),
   };
 }
+
+export interface NotionPage {
+  notionBlocks: string[];
+}
+
+export function CreateNotionPage(): NotionPage {
+  return {
+    notionBlocks: [],
+  };
+}
+
+export interface Block {
+  blockKey: string;
+  blockValues: BlockValue[]; //區塊內容
+}
+
+export function CreateBlock(): Block {
+  return {
+    blockKey: "",
+    blockValues: [],
+  };
+}
+
+export interface BlockValue {
+  color: BlockValueColor;
+  type: BlockValueType;
+  value: string;
+}
+
 export enum BlockValueColor {
   Normal,
   Red,
@@ -125,30 +149,10 @@ export enum BlockValueType {
   exampleText,
 }
 
-export interface Value {
-  color: BlockValueColor; //單行顏色
-  type: BlockValueType; //單行類型
-  content: string; //單行內容
-}
-export function CreateValue(): Value {
+export function CreateBlockValue(): BlockValue {
   return {
     color: BlockValueColor.Normal,
     type: BlockValueType.text,
-    content: "",
-  };
-}
-
-export interface HtmlMatchInfo {
-  startIndex: number;
-  endIndex: number;
-  key: string;
-  values: Value[][];
-}
-export function CreateHtmlMatchInfo(): HtmlMatchInfo {
-  return {
-    startIndex: 0,
-    endIndex: 0,
-    key: "",
-    values: [],
+    value: "",
   };
 }

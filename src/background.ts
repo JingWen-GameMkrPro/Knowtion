@@ -1,5 +1,5 @@
 import * as T from "./commonType";
-import * as Utility from "./utility";
+import * as Utility from "./commonBehavior";
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url && /^https?:/.test(tab.url)) {
@@ -10,9 +10,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     });
 
     // 確保 content script 載入後再發送訊息
-    const chromeData = await Utility.getChromeData<T.StorageObject>(
-      T.LOCAL_STORAGE_KEY.STORAGE_OBJECT
-    );
+    const chromeData = await Utility.GetChromeSaveData();
     chrome.tabs.sendMessage(tabId, {
       action: "HIGHLIGHT",
       trie: chromeData?.trie,

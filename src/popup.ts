@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const inputNotionApi = document.getElementById("inputNotionApi") as HTMLInputElement;
   inputNotionApi.addEventListener("input", (event) => {
     const newValue = (event.target as HTMLInputElement).value;
-    viewModel_.UserSetNotionApiField(newValue);
+    viewModel_.UpdateNotionApi(newValue);
   });
 
   const inputNotionPageId = document.getElementById("inputNotionPageId") as HTMLInputElement;
@@ -59,30 +59,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     viewModel_.ClickAddBtn();
   });
 
-  // Init
-  var object = await viewModel_.GetStorageObject();
-  if (object) {
-    inputNotionApi.value = object.notionApi;
-    inputNotionPageId.value = object.noteList[object.noteListIndex][0].pageId;
-
-    /**
-     * 以下正式版可以直接刪除
-     */
-    tmpIndex.textContent = (object.noteListIndex + 1).toString();
-    tmpSum.textContent = object.noteList.length.toString();
-    tmpTitle.textContent = object.noteList[object.noteListIndex][0].title;
-  }
-
-  const onStorageObjectUpdate = (newValue: T.StorageObject) => {
+  const onSaveDataUpdate = (newValue: T.ChromeSaveData) => {
     inputNotionApi.value = newValue.notionApi;
-    inputNotionPageId.value = newValue.noteList[newValue.noteListIndex][0].pageId;
+    inputNotionPageId.value = newValue.notes[newValue.noteIndex].notionPageInfo.pageId;
 
     /**
      * 以下正式版可以直接刪除
      */
-    tmpIndex.textContent = (newValue.noteListIndex + 1).toString();
-    tmpSum.textContent = newValue.noteList.length.toString();
-    tmpTitle.textContent = newValue.noteList[newValue.noteListIndex][0].title;
+    tmpIndex.textContent = (newValue.noteIndex + 1).toString();
+    tmpSum.textContent = newValue.notes.length.toString();
+    tmpTitle.textContent = newValue.notes[newValue.noteIndex].notionPageInfo.title;
   };
-  viewModel_.SubscribeStorageObject(onStorageObjectUpdate);
+  viewModel_.WatchChromeSaveData(onSaveDataUpdate);
 });

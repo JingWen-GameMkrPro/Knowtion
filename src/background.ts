@@ -2,7 +2,9 @@ import * as Chrome from "./chromeModel";
 import * as ChromeRuntimeCommon from "./chromeRuntimeCommon";
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  let isAsync = false;
   if (changeInfo.status === "complete" && tab.url && /^https?:/.test(tab.url)) {
+    isAsync = true;
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
       files: ["content.js"],
@@ -20,7 +22,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
       });
     }
   }
-  return true;
+  return isAsync;
 });
 
 //Source from model

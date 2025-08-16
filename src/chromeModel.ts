@@ -54,17 +54,17 @@ export class Service {
   }
 
   public static async InitChromeSaveData(): Promise<ChromeSaveData> {
-    await clearChromeSaveData();
+    await this.clearChromeSaveData();
     const newChromeSaveData = CreateChromeSaveData();
     await this.SetChromeSaveData(newChromeSaveData);
     return newChromeSaveData;
   }
-}
 
-export async function clearChromeSaveData(): Promise<void> {
-  try {
-    await chrome.storage.local.remove(CHROME_SAVE_DATA_KEY);
-  } catch (e) {
-    console.error("Fail to ClearChormeData: ", e);
+  private static async clearChromeSaveData(): Promise<void> {
+    try {
+      await chrome.storage.local.remove(CHROME_SAVE_DATA_KEY);
+    } catch (e) {
+      console.error("Fail to ClearChormeData: ", e);
+    }
   }
 }

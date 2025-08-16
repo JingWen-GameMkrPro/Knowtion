@@ -1,8 +1,8 @@
 // import * as T from "./commonType";
-import { ViewModel } from "./viewModel";
+import * as ViewModel from "./viewModel";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const viewModel_ = new ViewModel();
+  const viewModel_ = new ViewModel.ViewModel();
 
   const inputNotionApi = document.getElementById("inputNotionApi") as HTMLInputElement;
   inputNotionApi.addEventListener("input", (event) => {
@@ -16,47 +16,57 @@ document.addEventListener("DOMContentLoaded", async () => {
     viewModel_.UserSetNotionPageIdField(newValue);
   });
 
-  const btnDeleteNote = document.getElementById("btnDeleteNote") as HTMLButtonElement;
-
-  const btnUpdate = document.getElementById("btnUpdate") as HTMLButtonElement;
-  btnUpdate.addEventListener("click", () => {
-    viewModel_.ClickUpdateBtn();
-  });
-
   /**
    * 以下正式版可以直接刪除
    */
   const tmpIndex = document.getElementById("tmpIndex") as HTMLHeadingElement;
-  const tmpSum = document.getElementById("tmpSum") as HTMLHeadingElement;
-  const tmpTitle = document.getElementById("tmpTitle") as HTMLHeadingElement;
-  const btnClear = document.getElementById("btnClear") as HTMLButtonElement;
-  btnClear.addEventListener("click", () => {
-    viewModel_.ClickClearBtn();
-  });
-  const btnDebug = document.getElementById("btnDebug") as HTMLButtonElement;
-  btnDebug.addEventListener("click", () => {
-    viewModel_.ClickDebugBtn();
-  });
-  const btnDebug2 = document.getElementById("btnDebug2") as HTMLButtonElement;
-  btnDebug2.addEventListener("click", () => {
-    viewModel_.ClickDebug2Btn();
-  });
-  const btnDebug3 = document.getElementById("btnDebug3") as HTMLButtonElement;
-  btnDebug3.addEventListener("click", () => {
-    viewModel_.ClickDebug3Btn();
+  viewModel_.Subscriber.Subscribe(ViewModel.SubscribeType.UpdatedNoteIndex, (newIndex) => {
+    tmpIndex.textContent = newIndex;
   });
 
-  const btnNext = document.getElementById("btnNext") as HTMLButtonElement;
-  btnNext.addEventListener("click", () => {
-    viewModel_.ClickNextBtn();
+  const tmpSum = document.getElementById("tmpSum") as HTMLHeadingElement;
+  viewModel_.Subscriber.Subscribe(ViewModel.SubscribeType.UpdatedNoteSize, (newSize) => {
+    tmpSum.textContent = newSize;
   });
-  const btnBack = document.getElementById("btnBack") as HTMLButtonElement;
-  btnBack.addEventListener("click", () => {
-    viewModel_.ClickBackBtn();
+
+  const tmpTitle = document.getElementById("tmpTitle") as HTMLHeadingElement;
+  viewModel_.Subscriber.Subscribe(ViewModel.SubscribeType.UpdatedNoteTitle, (newTitle) => {
+    tmpTitle.textContent = newTitle;
   });
-  const btnAddNote = document.getElementById("btnAddNote") as HTMLButtonElement;
-  btnAddNote.addEventListener("click", () => {
-    viewModel_.ClickAddBtn();
+
+  const btn1 = document.getElementById("btn1") as HTMLButtonElement;
+  btn1.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn(1);
+  });
+
+  const btn2 = document.getElementById("btn2") as HTMLButtonElement;
+  btn2.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn(2);
+  });
+
+  const btn3 = document.getElementById("btn3") as HTMLButtonElement;
+  btn3.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn(3);
+  });
+
+  const btn4 = document.getElementById("btn4") as HTMLButtonElement;
+  btn4.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn(4);
+  });
+
+  const btn5 = document.getElementById("btn5") as HTMLButtonElement;
+  btn5.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn(5);
+  });
+
+  const btn6 = document.getElementById("btn6") as HTMLButtonElement;
+  btn6.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn(6);
+  });
+
+  const btn7 = document.getElementById("btn7") as HTMLButtonElement;
+  btn7.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn(7);
   });
 
   // TODO: 資料請個別訂閱，並且不依賴COMMON TYPE

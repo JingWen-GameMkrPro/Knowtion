@@ -83,22 +83,6 @@ export function CreateBlockValue(): BlockValue {
   };
 }
 
-export function DivideStringWithSymbol(value: string, symbol: string): [string, string] | null {
-  const parts = value.split(symbol);
-  if (parts.length === 2) {
-    return [parts[0], parts[1]];
-  }
-
-  return null;
-}
-export function IsNullorUndefined<T>(value: T | null | undefined): value is null | undefined {
-  return value === null || value === undefined;
-}
-
-export function IsAnyNullOrUndefined<T extends readonly any[]>(...values: T): boolean {
-  return values.some((value) => IsNullorUndefined(value));
-}
-
 export class Service {
   public static AddNewNote(saveData: Chrome.ChromeSaveData): Chrome.ChromeSaveData {
     saveData.notes.push(CreateNote());
@@ -264,7 +248,7 @@ export class Service {
 
     notionPage.notionBlocks.forEach((block) => {
       const newBlock = this.makeBlockByNotionBlock(block);
-      if (!IsNullorUndefined(newBlock)) {
+      if (!this.isNullorUndefined(newBlock)) {
         newBlocks.push(newBlock);
       }
     });
@@ -332,10 +316,10 @@ export class Service {
 
   private static makeBlockByNotionBlock(notionBlock: string): Block | null {
     // TODO: 分割符號先使用 '/'
-    const twoParts = DivideStringWithSymbol(notionBlock, "/");
+    const twoParts = this.divideStringWithSymbol(notionBlock, "/");
 
     // TODO: 將Values分成更細微value
-    if (!IsNullorUndefined(twoParts)) {
+    if (!this.isNullorUndefined(twoParts)) {
       const newBlock = CreateBlock();
 
       newBlock.blockKey = twoParts[0];
@@ -349,5 +333,17 @@ export class Service {
     }
 
     return null;
+  }
+
+  private static divideStringWithSymbol(value: string, symbol: string): [string, string] | null {
+    const parts = value.split(symbol);
+    if (parts.length === 2) {
+      return [parts[0], parts[1]];
+    }
+    return null;
+  }
+
+  private static isNullorUndefined<T>(value: T | null | undefined): value is null | undefined {
+    return value === null || value === undefined;
   }
 }

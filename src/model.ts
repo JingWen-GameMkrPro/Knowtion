@@ -30,56 +30,55 @@ export class Model {
 
     // Edit
     saveData = Note.Service.AddNewNote(saveData);
-
+    // Set
+    await Chrome.Service.SetChromeSaveData(saveData);
     // Notify
     this.Subscriber.Notify(SubscribeType.NoteIndex, saveData.noteIndex);
     this.Subscriber.Notify(SubscribeType.Notes, saveData.notes);
     this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
-
-    // Set
-    await Chrome.Service.SetChromeSaveData(saveData);
   }
 
   // UserInput: next current index
   public async NextNoteIndex() {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = Note.Service.NextNoteIndex(saveData);
+    await Chrome.Service.SetChromeSaveData(saveData);
     this.Subscriber.Notify(SubscribeType.NoteIndex, saveData.noteIndex);
     this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
-    await Chrome.Service.SetChromeSaveData(saveData);
   }
 
   // UserInput: back current index
   public async BackNoteIndex() {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = Note.Service.BackNoteIndex(saveData);
+    await Chrome.Service.SetChromeSaveData(saveData);
     this.Subscriber.Notify(SubscribeType.NoteIndex, saveData.noteIndex);
     this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
-    await Chrome.Service.SetChromeSaveData(saveData);
   }
 
   // UserInput: update notion api
   public async UpdateNotionApi(newValue: string) {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = Note.Service.UpdateNotionApi(saveData, newValue);
-    this.Subscriber.Notify(SubscribeType.NotionApi, saveData.notionApi);
     await Chrome.Service.SetChromeSaveData(saveData);
+    this.Subscriber.Notify(SubscribeType.NotionApi, saveData.notionApi);
   }
 
   // UserInput: update notion page id
   public async UpdatePageId(newValue: string) {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = Note.Service.UpdateCurrentNoteNotionPageId(saveData, newValue);
-    this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
     await Chrome.Service.SetChromeSaveData(saveData);
+    this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
   }
 
   // UserInput: update current note
   public async UpdateCurrentNote(): Promise<any | null> {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = await Note.Service.UpdateCurrentNote(saveData);
-    this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
     await Chrome.Service.SetChromeSaveData(saveData);
+    this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
+    this.Subscriber.Notify(SubscribeType.Notes, saveData.notes);
   }
 
   // UserInput: init save datas

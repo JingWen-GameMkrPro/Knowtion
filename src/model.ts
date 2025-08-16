@@ -1,6 +1,8 @@
 import * as Chrome from "./chromeModel";
 import * as Note from "./noteModel";
 import * as Trie from "./trieModel";
+import * as ChromeRuntimeCommon from "./chromeRuntimeCommon";
+import * as ChromeRuntimeHandler from "./chromeRuntimeHandler";
 
 // 組合各種子MODEL服務，並提供給VIEWMODE
 export class Model {
@@ -8,6 +10,7 @@ export class Model {
 
   constructor() {
     this.Subscriber = new Subscriber();
+    this.Subscriber.Subscribe(SubscribeType.Notes, this.updateTrie);
   }
 
   // NOTE: trigger when note updated
@@ -16,6 +19,7 @@ export class Model {
   updateTrie = async (newNotes: Note.Note[]): Promise<void> => {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = Trie.Service.UpdateTrie(saveData);
+    ChromeRuntimeHandler.Service.SendMessage(ChromeRuntimeCommon.BackgroundMessageType.UpdatedTrie);
     await Chrome.Service.SetChromeSaveData(saveData);
   };
 
@@ -58,13 +62,15 @@ export class Model {
   public async UpdateNotionApi(newValue: string) {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = Note.Service.UpdateNotionApi(saveData, newValue);
+    this.Subscriber.Notify(SubscribeType.NotionApi, saveData.notionApi);
     await Chrome.Service.SetChromeSaveData(saveData);
   }
 
   // UserInput: update notion page id
-  public async UpdateCurrentNoteNotionPageId(newValue: string) {
+  public async UpdatePageId(newValue: string) {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = Note.Service.UpdateCurrentNoteNotionPageId(saveData, newValue);
+    this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
     await Chrome.Service.SetChromeSaveData(saveData);
   }
 
@@ -83,15 +89,30 @@ export class Model {
     this.Subscriber.Notify(SubscribeType.Notes, saveData.notes);
     this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
   }
+
+  public async UpdateHighlightMode(isHighlight: boolean): Promise<any | null> {
+    let saveData = await Chrome.Service.GetChromeSaveData();
+    saveData.isHighlight = isHighlight;
+
+    ChromeRuntimeHandler.Service.SendMessage(ChromeRuntimeCommon.BackgroundMessageType.Debug);
+
+    await Chrome.Service.SetChromeSaveData(saveData);
+  }
+
+  public async InitSubscriberData() {
+    const saveData = await Chrome.Service.GetChromeSaveData();
+    this.Subscriber.Notify(SubscribeType.NoteIndex, saveData.noteIndex);
+    this.Subscriber.Notify(SubscribeType.Notes, saveData.notes);
+    this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
+    this.Subscriber.Notify(SubscribeType.NotionApi, saveData.notionApi);
+  }
 }
 
 export enum SubscribeType {
-  NotionApi = 0,
-  IsHighlight = 1,
   NoteIndex = 2,
   Notes = 3,
-  Trie = 4,
   CurrentNote = 5,
+  NotionApi = 6,
 }
 
 type Callback = (data: any) => void;
@@ -103,7 +124,7 @@ type SubscribersDic = {
 class Subscriber {
   private subscribers: SubscribersDic = {};
 
-  public Subscribe = (type: SubscribeType, callback: Callback): void => {
+  public Subscribe = async (type: SubscribeType, callback: Callback): Promise<void> => {
     if (!this.subscribers[type]) {
       this.subscribers[type] = [];
     }

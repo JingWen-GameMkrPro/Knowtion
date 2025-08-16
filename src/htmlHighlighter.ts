@@ -1,7 +1,7 @@
 import * as Note from "./noteModel";
 import * as Trie from "./trieModel";
 
-export function ProcessHighlight(root: Node, trie: Trie.Trie): void {
+export function Highlight(root: Node, trie: Trie.Trie): void {
   // Use a TreeWalker to efficiently find all relevant text nodes.
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (node: Text): number => {
@@ -103,10 +103,10 @@ function highlightMatches(node: Text, matches: HtmlMatchInfo[], trie: Trie.Trie)
     });
 
     // Add mouseout event listener to hide the tooltip.
-    // span.addEventListener("mouseout", () => {
-    //   const tooltip = getSharedTooltip();
-    //   tooltip.style.opacity = "0";
-    // });
+    span.addEventListener("mouseout", () => {
+      const tooltip = getSharedTooltip();
+      tooltip.style.opacity = "0";
+    });
 
     domCopy.appendChild(span);
     cursor = endIndex;

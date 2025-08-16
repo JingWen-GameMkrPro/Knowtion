@@ -1,20 +1,15 @@
-import * as ContentSearcher from "./contentHighlighter";
+import * as HtmlHighlighter from "./htmlHighlighter";
+import * as ChromeRuntimeCommon from "./chromeRuntimeCommon";
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  console.log("Process Highlight Task");
-
-  if (msg.action === "HIGHLIGHT" && msg.trie) {
-    try {
-      console.log("Process Highlight Task");
-      ContentSearcher.ProcessHighlight(document.body, msg.trie);
-    } catch (e) {
-      console.error("高亮時發生錯誤：", e);
-    }
-  }
-
-  if (msg.action === "UNHIGHLIGHT") {
+  switch (msg.type) {
+    case ChromeRuntimeCommon.TabMessageType.Highlight:
+      HtmlHighlighter.Highlight(document.body, msg.trie);
+      break;
+    case ChromeRuntimeCommon.TabMessageType.Unhighlight:
+      break;
   }
   return true;
 });
 
-console.log("CONTENT.TS");
+console.log("content ready！");

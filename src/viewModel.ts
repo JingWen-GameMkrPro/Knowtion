@@ -20,10 +20,14 @@ export class ViewModel {
     this.model_.Subscriber.Subscribe(Model.SubscribeType.CurrentNote, (newNote) => {
       const note = newNote as Note.Note; // Type assertion is done inside the function body
       this.Subscriber.Notify(SubscribeType.UpdatedNoteTitle, note.notionPageInfo.title);
+      this.Subscriber.Notify(SubscribeType.UpdatedPageId, note.notionPageInfo.pageId);
+    });
+    this.model_.Subscriber.Subscribe(Model.SubscribeType.NotionApi, (newApi) => {
+      this.Subscriber.Notify(SubscribeType.UpdatedNotionApi, newApi);
     });
   }
 
-  public async ClickDebugBtn(index: number) {
+  public ClickDebugBtn(index: number) {
     switch (index) {
       case 1:
         Model.Debug.ConsoleSaveData();
@@ -46,30 +50,34 @@ export class ViewModel {
       case 7:
         this.model_.BackNoteIndex();
         break;
+      case 8:
+        this.model_.UpdateHighlightMode(true);
+        break;
+      case 9:
+        this.model_.UpdateHighlightMode(false);
+        break;
     }
   }
 
-  public async UpdateNotionApi(newValue: string) {
+  public UpdateNotionApi(newValue: string) {
     this.model_.UpdateNotionApi(newValue);
   }
 
-  public async UserSetNotionPageIdField(newValue: string) {
-    this.model_.UpdateCurrentNoteNotionPageId(newValue);
+  public UpdatePageId(newValue: string) {
+    this.model_.UpdatePageId(newValue);
   }
 
-  // public ClickDebug3Btn() {
-  //   chrome.runtime.sendMessage({ action: "NOTIFY_BACKGROUND" }, (response: String) => {
-  //     if (response) {
-  //       console.log("Received background message");
-  //     }
-  //   });
-  // }
+  public InitSubscriberData() {
+    this.model_.InitSubscriberData();
+  }
 }
 
 export enum SubscribeType {
   UpdatedNoteIndex = 0,
   UpdatedNoteSize = 1,
   UpdatedNoteTitle = 2,
+  UpdatedNotionApi = 3,
+  UpdatedPageId = 4,
 }
 type Callback = (data: any) => void;
 

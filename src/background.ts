@@ -1,28 +1,63 @@
 import * as Chrome from "./chromeModel";
+import * as ChromeRuntimeCommon from "./chromeRuntimeCommon";
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url && /^https?:/.test(tab.url)) {
-    // 在發送訊息之前，先確保 content script 已被注入
     await chrome.scripting.executeScript({
       target: { tabId: tabId },
       files: ["content.js"],
     });
 
-    // 確保 content script 載入後再發送訊息
-    const chromeData = await Chrome.Service.GetChromeSaveData();
-    chrome.tabs.sendMessage(tabId, {
-      action: "HIGHLIGHT",
-      trie: chromeData?.trie,
-    });
+    const saveData = await Chrome.Service.GetChromeSaveData();
+    if (saveData.isHighlight) {
+      chrome.tabs.sendMessage(tabId, {
+        type: ChromeRuntimeCommon.TabMessageType.Highlight,
+        trie: saveData.trie,
+      });
+    } else {
+      chrome.tabs.sendMessage(tabId, {
+        type: ChromeRuntimeCommon.TabMessageType.Unhighlight,
+      });
+    }
   }
+  return true;
 });
 
-// DEBUG
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  // 透過屬性檢查來確認訊息的意圖
-  if (message && message.action === "NOTIFY_BACKGROUND") {
-    console.log("從 popup 接收到訊息: ", message);
-    sendResponse("背景腳本已收到訊息並處理完成！");
+//Source from model
+chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
+  switch (msg && msg.type) {
+    case ChromeRuntimeCommon.BackgroundMessageType.Debug:
+      console.log("Received sendDebugMessage");
+      break;
+    case ChromeRuntimeCommon.BackgroundMessageType.UpdatedTrie:
+      const tabId = await getCurrentActiveTabId();
+      if (tabId !== null) {
+        const saveData = await Chrome.Service.GetChromeSaveData();
+        if (saveData.isHighlight) {
+          chrome.tabs.sendMessage(tabId, {
+            type: ChromeRuntimeCommon.TabMessageType.Highlight,
+            trie: saveData.trie,
+          });
+        } else {
+          chrome.tabs.sendMessage(tabId, {
+            type: ChromeRuntimeCommon.TabMessageType.Unhighlight,
+          });
+        }
+      }
+      break;
   }
+  return true;
 });
-console.log("background");
+
+async function getCurrentActiveTabId(): Promise<number | null> {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  const activeTab = tabs[0];
+
+  if (activeTab && activeTab.id) {
+    return activeTab.id;
+  }
+
+  return null;
+}
+
+console.log("background ready！");

@@ -9,11 +9,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     const newValue = (event.target as HTMLInputElement).value;
     viewModel_.UpdateNotionApi(newValue);
   });
+  // HACK: Only use in initial
+  viewModel_.Subscriber.Subscribe(ViewModel.SubscribeType.UpdatedNotionApi, (newApi) => {
+    inputNotionApi.value = newApi;
+  });
 
   const inputNotionPageId = document.getElementById("inputNotionPageId") as HTMLInputElement;
   inputNotionPageId.addEventListener("input", (event) => {
     const newValue = (event.target as HTMLInputElement).value;
-    viewModel_.UserSetNotionPageIdField(newValue);
+    viewModel_.UpdatePageId(newValue);
+  });
+  // HACK: Only use in initial
+  viewModel_.Subscriber.Subscribe(ViewModel.SubscribeType.UpdatedPageId, (newPageId) => {
+    inputNotionPageId.value = newPageId;
   });
 
   /**
@@ -69,17 +77,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     viewModel_.ClickDebugBtn(7);
   });
 
-  // TODO: 資料請個別訂閱，並且不依賴COMMON TYPE
-  // const onSaveDataUpdate = (newValue: T.ChromeSaveData) => {
-  //   inputNotionApi.value = newValue.notionApi;
-  //   inputNotionPageId.value = newValue.notes[newValue.noteIndex].notionPageInfo.pageId;
+  const btn8 = document.getElementById("btn8") as HTMLButtonElement;
+  btn8.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn(8);
+  });
 
-  //   /**
-  //    * 以下正式版可以直接刪除
-  //    */
-  //   tmpIndex.textContent = (newValue.noteIndex + 1).toString();
-  //   tmpSum.textContent = newValue.notes.length.toString();
-  //   tmpTitle.textContent = newValue.notes[newValue.noteIndex].notionPageInfo.title;
-  // };
-  // viewModel_.WatchChromeSaveData(onSaveDataUpdate);
+  const btn9 = document.getElementById("btn9") as HTMLButtonElement;
+  btn9.addEventListener("click", () => {
+    viewModel_.ClickDebugBtn(9);
+  });
+
+  viewModel_.InitSubscriberData();
 });

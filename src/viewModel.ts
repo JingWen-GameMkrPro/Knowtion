@@ -1,18 +1,18 @@
 import * as ModelTypes from "./model";
-import * as T from "./commonType";
-
+import * as Note from "./noteModel";
+import * as Trie from "./trieModel";
 export class ViewModel {
   private model_: ModelTypes.Model;
-  private ChromeSaveDataWatcher_: ((newValue: T.ChromeSaveData) => void)[] = [];
+  // private ChromeSaveDataWatcher_: ((newValue: T.ChromeSaveData) => void)[] = [];
 
   constructor() {
     this.model_ = new ModelTypes.Model();
-    this.model_.WatchChromeSaveData((newValue) => this.onStorageObjectUpdate(newValue));
+    // this.model_.WatchChromeSaveData((newValue) => this.onStorageObjectUpdate(newValue));
   }
 
-  public WatchChromeSaveData(callback: (newValue: T.ChromeSaveData) => void): void {
-    this.ChromeSaveDataWatcher_.push(callback);
-  }
+  // public WatchChromeSaveData(callback: (newValue: T.ChromeSaveData) => void): void {
+  //   this.ChromeSaveDataWatcher_.push(callback);
+  // }
 
   // 按下Update 按鈕後
   // 1、獲取INFO
@@ -28,7 +28,7 @@ export class ViewModel {
     var newBlocks = this.model_.createBlocksByNotionPage(newOrinData);
 
     //儲存
-    const newNote = T.CreateNote();
+    const newNote = Note.CreateNote();
     newNote.notionPageInfo = newNoteInfo;
     newNote.notionPage = newOrinData;
     newNote.blocks = newBlocks;
@@ -75,11 +75,11 @@ export class ViewModel {
     this.model_.UpdateCurrentNoteNotionPageId(newValue);
   }
 
-  private onStorageObjectUpdate(newValue: T.ChromeSaveData) {
-    this.notify(newValue);
-  }
+  // private onStorageObjectUpdate(newValue: T.ChromeSaveData) {
+  //   this.notify(newValue);
+  // }
 
-  private notify(newValue: T.ChromeSaveData): void {
-    this.ChromeSaveDataWatcher_.forEach((callback) => callback(newValue));
-  }
+  // private notify(newValue: T.ChromeSaveData): void {
+  //   this.ChromeSaveDataWatcher_.forEach((callback) => callback(newValue));
+  // }
 }

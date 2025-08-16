@@ -1,4 +1,4 @@
-import * as T from "./commonType";
+// import * as T from "./commonType";
 import { ViewModel } from "./viewModel";
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -59,16 +59,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     viewModel_.ClickAddBtn();
   });
 
-  const onSaveDataUpdate = (newValue: T.ChromeSaveData) => {
-    inputNotionApi.value = newValue.notionApi;
-    inputNotionPageId.value = newValue.notes[newValue.noteIndex].notionPageInfo.pageId;
+  // TODO: 資料請個別訂閱，並且不依賴COMMON TYPE
+  // const onSaveDataUpdate = (newValue: T.ChromeSaveData) => {
+  //   inputNotionApi.value = newValue.notionApi;
+  //   inputNotionPageId.value = newValue.notes[newValue.noteIndex].notionPageInfo.pageId;
 
-    /**
-     * 以下正式版可以直接刪除
-     */
-    tmpIndex.textContent = (newValue.noteIndex + 1).toString();
-    tmpSum.textContent = newValue.notes.length.toString();
-    tmpTitle.textContent = newValue.notes[newValue.noteIndex].notionPageInfo.title;
-  };
-  viewModel_.WatchChromeSaveData(onSaveDataUpdate);
+  //   /**
+  //    * 以下正式版可以直接刪除
+  //    */
+  //   tmpIndex.textContent = (newValue.noteIndex + 1).toString();
+  //   tmpSum.textContent = newValue.notes.length.toString();
+  //   tmpTitle.textContent = newValue.notes[newValue.noteIndex].notionPageInfo.title;
+  // };
+  // viewModel_.WatchChromeSaveData(onSaveDataUpdate);
 });

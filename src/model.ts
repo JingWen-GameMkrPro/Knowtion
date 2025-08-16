@@ -1,6 +1,7 @@
 import * as B from "./commonBehavior";
-import * as T from "./commonType";
-
+import * as Chrome from "./chromeModel";
+import * as Note from "./noteModel";
+import * as Trie from "./trieModel";
 export class Model {
   constructor() {
     this.WatchChromeSaveDataNotes(this.updateTrie);
@@ -12,30 +13,30 @@ export class Model {
 
   // Chrome: init save data
   public async InitChromeSaveData(): Promise<void> {
-    const initValue = await B.InitChromeSaveData();
+    const initValue = await Chrome.InitChromeSaveData();
     this.notifyChromeSaveDataWatcher(initValue);
   }
 
   // Chrome: get save data
-  private async getChromeSaveData(): Promise<T.ChromeSaveData> {
-    let saveData = await B.GetChromeSaveData();
+  private async getChromeSaveData(): Promise<Chrome.ChromeSaveData> {
+    let saveData = await Chrome.GetChromeSaveData();
 
     // Local first time to use
     if (saveData == null) {
-      saveData = await B.InitChromeSaveData();
+      saveData = await Chrome.InitChromeSaveData();
     }
 
     return saveData;
   }
 
   // Chrome: set save data
-  private async setChromeSaveData(newValue: T.ChromeSaveData): Promise<void> {
-    await B.SetChromeSaveData(newValue);
+  private async setChromeSaveData(newValue: Chrome.ChromeSaveData): Promise<void> {
+    await Chrome.SetChromeSaveData(newValue);
     this.notifyChromeSaveDataWatcher(newValue);
   }
 
   // UserInput: update current note
-  public async UpdateCurrentNote(newNote: T.Note) {
+  public async UpdateCurrentNote(newNote: Note.Note) {
     const saveData = await this.getChromeSaveData();
     saveData.notes[saveData.noteIndex] = newNote;
     await this.setChromeSaveData(saveData);
@@ -45,7 +46,7 @@ export class Model {
   // UserInput: add new note
   public async AddNewNote() {
     var saveData = await this.getChromeSaveData();
-    saveData.notes.push(T.CreateNote());
+    saveData.notes.push(Note.CreateNote());
     saveData.noteIndex = saveData.notes.length - 1;
     await this.setChromeSaveData(saveData);
   }
@@ -82,34 +83,39 @@ export class Model {
   }
 
   // NOTE: trigger when note updated
-  private updateTrie = async (newNotes: T.Note[]): Promise<void> => {
+  // NOTE: This method is a callback, its 'this' context will not be the class instance, causing a 'this' binding error.
+  // NOTE: Use an arrow function to auto maintain the class instance context.
+  private updateTrie = async (newNotes: Note.Note[]): Promise<void> => {
     const saveData = await this.getChromeSaveData();
     const blockCollection = newNotes.flatMap((note) => note.blocks);
     saveData.trie = this.makeTrie(blockCollection);
     await this.setChromeSaveData(saveData);
   };
+
   /**
    * Subscribe
    */
-  chromeSaveDataWatcher_: ((newValue: T.ChromeSaveData) => void)[] = [];
-  chromeSaveDataNotesWatcher_: ((newValue: T.Note[]) => void)[] = [];
+  chromeSaveDataWatcher_: ((newValue: Chrome.ChromeSaveData) => void)[] = [];
+  chromeSaveDataNotesWatcher_: ((newValue: Note.Note[]) => void)[] = [];
 
-  public async WatchChromeSaveData(callback: (newValue: T.ChromeSaveData) => void): Promise<void> {
+  public async WatchChromeSaveData(
+    callback: (newValue: Chrome.ChromeSaveData) => void
+  ): Promise<void> {
     this.chromeSaveDataWatcher_.push(callback);
 
     // NOTE: Initial
     callback(await this.getChromeSaveData());
   }
 
-  public WatchChromeSaveDataNotes(callback: (newValue: T.Note[]) => void): void {
+  public WatchChromeSaveDataNotes(callback: (newValue: Note.Note[]) => void): void {
     this.chromeSaveDataNotesWatcher_.push(callback);
   }
 
-  private notifyChromeSaveDataWatcher(newValue: T.ChromeSaveData): void {
+  private notifyChromeSaveDataWatcher(newValue: Chrome.ChromeSaveData): void {
     this.chromeSaveDataWatcher_.forEach((callback) => callback(newValue));
   }
 
-  private notifyChromeSaveDataNotesWatcher(newValue: T.Note[]): void {
+  private notifyChromeSaveDataNotesWatcher(newValue: Note.Note[]): void {
     this.chromeSaveDataNotesWatcher_.forEach((callback) => callback(newValue));
   }
 
@@ -136,8 +142,8 @@ export class Model {
     return json ? json : null;
   }
 
-  public transformJsonAsNotionPageInfo(json: any): T.NotionPageInfo {
-    const noteInfo = T.CreateNotionPageInfo();
+  public transformJsonAsNotionPageInfo(json: any): Note.NotionPageInfo {
+    const noteInfo = Note.CreateNotionPageInfo();
 
     noteInfo.fetchTime = Date.now();
     noteInfo.lastEditedTime = new Date(json.last_edited_time).getTime();
@@ -147,8 +153,8 @@ export class Model {
     return noteInfo;
   }
 
-  public transformJsonAsNotionPage(json: any): T.NotionPage {
-    const newNotionPage = T.CreateNotionPage();
+  public transformJsonAsNotionPage(json: any): Note.NotionPage {
+    const newNotionPage = Note.CreateNotionPage();
 
     json.forEach((block: any) => {
       if (block.type == "paragraph" && block.paragraph.rich_text.length !== 0) {
@@ -161,8 +167,8 @@ export class Model {
     return newNotionPage;
   }
 
-  public createBlocksByNotionPage(notionPage: T.NotionPage): T.Block[] {
-    const newBlocks: T.Block[] = [];
+  public createBlocksByNotionPage(notionPage: Note.NotionPage): Note.Block[] {
+    const newBlocks: Note.Block[] = [];
 
     notionPage.notionBlocks.forEach((block) => {
       const newBlock = this.makeBlockByNotionBlock(block);
@@ -240,8 +246,8 @@ export class Model {
     }
   }
 
-  private divideStringWithPattern(value: string): [T.BlockValueType, string][] {
-    const result: [T.BlockValueType, string][] = [];
+  private divideStringWithPattern(value: string): [Note.BlockValueType, string][] {
+    const result: [Note.BlockValueType, string][] = [];
     const regex = /[^@~&]+|[@~&]\{[^}]*\}/g;
     const matches = value.match(regex);
 
@@ -251,13 +257,13 @@ export class Model {
 
     // 映射符號到 T.BlockValueType
     const typeMap = {
-      "@": T.BlockValueType.exampleText,
-      "~": T.BlockValueType.warningText,
-      "&": T.BlockValueType.referenceText,
+      "@": Note.BlockValueType.exampleText,
+      "~": Note.BlockValueType.warningText,
+      "&": Note.BlockValueType.referenceText,
     };
 
     matches.forEach((match) => {
-      let type: T.BlockValueType = T.BlockValueType.text;
+      let type: Note.BlockValueType = Note.BlockValueType.text;
       let content = match;
 
       // 檢查字串是否以特殊符號開頭
@@ -273,38 +279,38 @@ export class Model {
     return result;
   }
 
-  private makeBlockValue(text: [T.BlockValueType, string]): T.BlockValue {
-    const newValue = T.CreateBlockValue();
+  private makeBlockValue(text: [Note.BlockValueType, string]): Note.BlockValue {
+    const newValue = Note.CreateBlockValue();
     newValue.type = text[0];
     newValue.value = text[1];
     switch (text[0]) {
-      case T.BlockValueType.text:
-        newValue.color = T.BlockValueColor.Normal;
+      case Note.BlockValueType.text:
+        newValue.color = Note.BlockValueColor.Normal;
         newValue.value = text[1];
         break;
-      case T.BlockValueType.exampleText:
-        newValue.color = T.BlockValueColor.Blue;
+      case Note.BlockValueType.exampleText:
+        newValue.color = Note.BlockValueColor.Blue;
         newValue.value = text[1];
         break;
-      case T.BlockValueType.warningText:
-        newValue.color = T.BlockValueColor.Red;
+      case Note.BlockValueType.warningText:
+        newValue.color = Note.BlockValueColor.Red;
         newValue.value = text[1];
         break;
-      case T.BlockValueType.referenceText:
-        newValue.color = T.BlockValueColor.Green;
+      case Note.BlockValueType.referenceText:
+        newValue.color = Note.BlockValueColor.Green;
         newValue.value = text[1];
         break;
     }
     return newValue;
   }
 
-  private makeBlockByNotionBlock(notionBlock: string): T.Block | null {
+  private makeBlockByNotionBlock(notionBlock: string): Note.Block | null {
     // TODO: 分割符號先使用 '/'
     const twoParts = B.DivideStringWithSymbol(notionBlock, "/");
 
     // TODO: 將Values分成更細微value
     if (!B.IsNullorUndefined(twoParts)) {
-      const newBlock = T.CreateBlock();
+      const newBlock = Note.CreateBlock();
 
       newBlock.blockKey = twoParts[0];
 
@@ -319,10 +325,10 @@ export class Model {
     return null;
   }
 
-  public makeTrie(blockCollection: T.Block[]): T.Trie {
-    const newTrie = T.CreateTrie();
+  public makeTrie(blockCollection: Note.Block[]): Trie.Trie {
+    const newTrie = Trie.CreateTrie();
     blockCollection.forEach((block) => {
-      T.InsertTrie(newTrie, block);
+      Trie.InsertTrie(newTrie, block);
     });
     return newTrie;
   }

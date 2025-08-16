@@ -1,6 +1,7 @@
-import * as T from "./commonType";
+import * as Note from "./noteModel";
+import * as Trie from "./trieModel";
 
-export function ProcessHighlight(root: Node, trie: T.Trie): void {
+export function ProcessHighlight(root: Node, trie: Trie.Trie): void {
   // Use a TreeWalker to efficiently find all relevant text nodes.
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (node: Text): number => {
@@ -39,12 +40,12 @@ export function ProcessHighlight(root: Node, trie: T.Trie): void {
   }
 }
 
-function collectMatchesInNode(text: string, trieRoot: T.TrieNode): HtmlMatchInfo[] {
+function collectMatchesInNode(text: string, trieRoot: Trie.TrieNode): HtmlMatchInfo[] {
   const matches: HtmlMatchInfo[] = [];
   const lowerText = text.toLowerCase();
 
   for (let i = 0; i < lowerText.length; i++) {
-    let node: T.TrieNode = trieRoot;
+    let node: Trie.TrieNode = trieRoot;
     for (let j = i; j < lowerText.length; j++) {
       const currentChar = lowerText[j];
       if (!node.children?.[currentChar]) {
@@ -65,7 +66,7 @@ function collectMatchesInNode(text: string, trieRoot: T.TrieNode): HtmlMatchInfo
   return matches;
 }
 
-function highlightMatches(node: Text, matches: HtmlMatchInfo[], trie: T.Trie): void {
+function highlightMatches(node: Text, matches: HtmlMatchInfo[], trie: Trie.Trie): void {
   // Sort matches to ensure they are processed in order and to handle nested matches correctly.
   matches.sort((a, b) => a.startIndex - b.startIndex || b.endIndex - a.endIndex);
 
@@ -174,7 +175,7 @@ function getSharedTooltip(): HTMLDivElement {
   return window.sharedTooltip;
 }
 
-function constructTipByValues(key: string, valuess: T.BlockValue[][], trie: T.Trie): string {
+function constructTipByValues(key: string, valuess: Note.BlockValue[][], trie: Trie.Trie): string {
   let tip = `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold;">${key}</div>`;
   tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
 
@@ -185,26 +186,26 @@ function constructTipByValues(key: string, valuess: T.BlockValue[][], trie: T.Tr
 
     values.forEach((value) => {
       switch (value.type) {
-        case T.BlockValueType.text:
+        case Note.BlockValueType.text:
           tip += `<div style="padding:2px 0;">${value.value}</div>`;
           break;
-        case T.BlockValueType.referenceText: {
+        case Note.BlockValueType.referenceText: {
           if (key === value.value) {
             break;
           }
-          const refNode = T.SearchTrie(trie, value.value);
+          const refNode = Trie.SearchTrie(trie, value.value);
           if (refNode !== null) {
             tip += `<div style="background-color: ${tipColorMap.GREEN}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
             refNode.forEach((refInfosObject) => {
               refInfosObject.forEach((subInfo) => {
                 switch (subInfo.type) {
-                  case T.BlockValueType.referenceText:
-                  case T.BlockValueType.warningText:
+                  case Note.BlockValueType.referenceText:
+                  case Note.BlockValueType.warningText:
                     break;
-                  case T.BlockValueType.text:
+                  case Note.BlockValueType.text:
                     tip += `<div style="padding:2px 0;">${subInfo.value}</div>`;
                     break;
-                  case T.BlockValueType.exampleText:
+                  case Note.BlockValueType.exampleText:
                     tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${subInfo.value}</div>`;
                     break;
                 }
@@ -214,23 +215,23 @@ function constructTipByValues(key: string, valuess: T.BlockValue[][], trie: T.Tr
           }
           break;
         }
-        case T.BlockValueType.warningText: {
+        case Note.BlockValueType.warningText: {
           if (key === value.value) {
             break;
           }
-          const noticeNode = T.SearchTrie(trie, value.value);
+          const noticeNode = Trie.SearchTrie(trie, value.value);
           if (noticeNode !== null) {
             tip += `<div style="background-color: ${tipColorMap.RED}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
             noticeNode.forEach((noticeInfosObject) => {
               noticeInfosObject.forEach((subInfo) => {
                 switch (subInfo.type) {
-                  case T.BlockValueType.referenceText:
-                  case T.BlockValueType.warningText:
+                  case Note.BlockValueType.referenceText:
+                  case Note.BlockValueType.warningText:
                     break;
-                  case T.BlockValueType.text:
+                  case Note.BlockValueType.text:
                     tip += `<div style="padding:2px 0;">${subInfo.value}</div>`;
                     break;
-                  case T.BlockValueType.exampleText:
+                  case Note.BlockValueType.exampleText:
                     tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${subInfo.value}</div>`;
                     break;
                 }
@@ -240,7 +241,7 @@ function constructTipByValues(key: string, valuess: T.BlockValue[][], trie: T.Tr
           }
           break;
         }
-        case T.BlockValueType.exampleText:
+        case Note.BlockValueType.exampleText:
           tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${value.value}</div>`;
           break;
         default:
@@ -265,7 +266,7 @@ export interface HtmlMatchInfo {
   startIndex: number;
   endIndex: number;
   key: string;
-  values: T.BlockValue[][];
+  values: Note.BlockValue[][];
 }
 export function CreateHtmlMatchInfo(): HtmlMatchInfo {
   return {

@@ -19,8 +19,8 @@ export class Model {
   updateTrie = async (newNotes: Note.Note[]): Promise<void> => {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = Trie.Service.UpdateTrie(saveData);
-    ChromeRuntimeHandler.Service.SendMessage(ChromeRuntimeCommon.BackgroundMessageType.UpdatedTrie);
     await Chrome.Service.SetChromeSaveData(saveData);
+    ChromeRuntimeHandler.Service.SendMessage(ChromeRuntimeCommon.BackgroundMessageType.UpdatedTrie);
   };
 
   // UserInput: add new note
@@ -93,10 +93,8 @@ export class Model {
   public async UpdateHighlightMode(isHighlight: boolean): Promise<any | null> {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData.isHighlight = isHighlight;
-
-    ChromeRuntimeHandler.Service.SendMessage(ChromeRuntimeCommon.BackgroundMessageType.Debug);
-
     await Chrome.Service.SetChromeSaveData(saveData);
+    ChromeRuntimeHandler.Service.SendMessage(ChromeRuntimeCommon.BackgroundMessageType.UpdatedMode);
   }
 
   public async InitSubscriberData() {

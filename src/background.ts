@@ -29,6 +29,7 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
     case ChromeRuntimeCommon.BackgroundMessageType.Debug:
       console.log("Received sendDebugMessage");
       break;
+    case ChromeRuntimeCommon.BackgroundMessageType.UpdatedMode:
     case ChromeRuntimeCommon.BackgroundMessageType.UpdatedTrie:
       const tabId = await getCurrentActiveTabId();
       if (tabId !== null) {

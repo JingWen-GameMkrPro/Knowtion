@@ -7,10 +7,8 @@ export class Service {
       case ChromeRuntimeCommon.BackgroundMessageType.Debug:
         this.sendDebugMessage();
         break;
-      case ChromeRuntimeCommon.BackgroundMessageType.Highlight:
-        this.sendHighlightMessage();
-        break;
-      case ChromeRuntimeCommon.BackgroundMessageType.Unhighlight:
+      case ChromeRuntimeCommon.BackgroundMessageType.UpdatedMode:
+        this.sendUpdatedModeMessage();
         break;
       case ChromeRuntimeCommon.BackgroundMessageType.UpdatedTrie:
         this.sendUpdatedTrieMessage();
@@ -23,7 +21,9 @@ export class Service {
     chrome.runtime.sendMessage({ type: ChromeRuntimeCommon.BackgroundMessageType.Debug });
   }
 
-  private static sendHighlightMessage() {}
+  private static sendUpdatedModeMessage() {
+    chrome.runtime.sendMessage({ type: ChromeRuntimeCommon.BackgroundMessageType.UpdatedMode });
+  }
   private static sendUpdatedTrieMessage() {
     chrome.runtime.sendMessage({ type: ChromeRuntimeCommon.BackgroundMessageType.UpdatedTrie });
   }

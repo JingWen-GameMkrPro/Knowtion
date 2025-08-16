@@ -259,6 +259,17 @@ const tipColorMap = {
   BLUE: "rgb(0, 32, 65)",
 };
 
+export function ClearHighlight() {
+  const highlighted = document.querySelectorAll("span.highlight");
+  highlighted.forEach((span) => {
+    const parent = span.parentNode;
+    if (!parent) return;
+    const textNode = document.createTextNode(span.textContent ?? "");
+    parent.replaceChild(textNode, span);
+    parent.normalize();
+  });
+}
+
 /**
  * HTML matching Content's info
  */

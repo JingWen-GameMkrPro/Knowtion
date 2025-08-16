@@ -9,7 +9,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     });
 
     // 確保 content script 載入後再發送訊息
-    const chromeData = await Chrome.GetChromeSaveData();
+    const chromeData = await Chrome.Service.GetChromeSaveData();
     chrome.tabs.sendMessage(tabId, {
       action: "HIGHLIGHT",
       trie: chromeData?.trie,

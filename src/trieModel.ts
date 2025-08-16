@@ -1,4 +1,5 @@
 import * as Note from "./noteModel";
+import * as Chrome from "./chromeModel";
 
 export interface Trie {
   root: TrieNode;
@@ -47,4 +48,12 @@ export function SearchTrie(trie: Trie, key: string): Note.BlockValue[][] | null 
   }
 
   return currentNode.blockValuesCollection;
+}
+
+export function MakeTrie(blockCollection: Note.Block[]): Trie {
+  const newTrie = CreateTrie();
+  blockCollection.forEach((block) => {
+    InsertTrie(newTrie, block);
+  });
+  return newTrie;
 }

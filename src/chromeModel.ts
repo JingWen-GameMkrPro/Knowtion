@@ -29,32 +29,36 @@ export function CreateChromeSaveData(): ChromeSaveData {
   };
 }
 
-export async function GetChromeSaveData(): Promise<ChromeSaveData | null> {
-  try {
-    const result = await chrome.storage.local.get(CHROME_SAVE_DATA_KEY);
-    if (result[CHROME_SAVE_DATA_KEY] !== undefined) {
-      return result[CHROME_SAVE_DATA_KEY] as ChromeSaveData;
+export class Service {
+  public static async GetChromeSaveData(): Promise<ChromeSaveData> {
+    try {
+      const result = await chrome.storage.local.get(CHROME_SAVE_DATA_KEY);
+      if (result[CHROME_SAVE_DATA_KEY] !== undefined && result[CHROME_SAVE_DATA_KEY] !== null) {
+        return result[CHROME_SAVE_DATA_KEY] as ChromeSaveData;
+      } else {
+        return await this.InitChromeSaveData();
+      }
+    } catch (e) {
+      console.error("Fail to GetChormeData: ", e);
+      throw new Error("Failed to retrieve or initialize Chrome save data.");
     }
-  } catch (e) {
-    console.error("Fail to GetChormeData: ", e);
   }
-  return null;
-}
 
-export async function SetChromeSaveData<T>(value: ChromeSaveData): Promise<void> {
-  try {
-    await chrome.storage.local.set({ [CHROME_SAVE_DATA_KEY]: value });
-    console.log(value);
-  } catch (e) {
-    console.error(`Fail to SetChormeData: `, e);
+  public static async SetChromeSaveData<T>(value: ChromeSaveData): Promise<void> {
+    try {
+      await chrome.storage.local.set({ [CHROME_SAVE_DATA_KEY]: value });
+      console.log(value);
+    } catch (e) {
+      console.error(`Fail to SetChormeData: `, e);
+    }
   }
-}
 
-export async function InitChromeSaveData(): Promise<ChromeSaveData> {
-  await clearChromeSaveData();
-  const newChromeSaveData = CreateChromeSaveData();
-  await SetChromeSaveData(newChromeSaveData);
-  return newChromeSaveData;
+  public static async InitChromeSaveData(): Promise<ChromeSaveData> {
+    await clearChromeSaveData();
+    const newChromeSaveData = CreateChromeSaveData();
+    await this.SetChromeSaveData(newChromeSaveData);
+    return newChromeSaveData;
+  }
 }
 
 export async function clearChromeSaveData(): Promise<void> {

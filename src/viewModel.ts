@@ -18,21 +18,7 @@ export class ViewModel {
   // 1、獲取INFO
   // 2、獲取BLOCKS
   public async ClickUpdateBtn() {
-    // 獲得原始資料
-    var infoJson = await this.model_.FetchNotionPageInfo();
-    var blocksJson = await this.model_.FetchNotionPage();
-
-    //加工
-    var newNoteInfo = this.model_.transformJsonAsNotionPageInfo(infoJson);
-    var newOrinData = this.model_.transformJsonAsNotionPage(blocksJson);
-    var newBlocks = this.model_.createBlocksByNotionPage(newOrinData);
-
-    //儲存
-    const newNote = Note.CreateNote();
-    newNote.notionPageInfo = newNoteInfo;
-    newNote.notionPage = newOrinData;
-    newNote.blocks = newBlocks;
-    this.model_.UpdateCurrentNote(newNote);
+    this.model_.UpdateCurrentNote();
   }
 
   public ClickClearBtn() {
@@ -56,7 +42,7 @@ export class ViewModel {
   }
 
   public async ClickDebug2Btn() {
-    this.model_.InitChromeSaveData();
+    // this.model_.InitChromeSaveData();
   }
 
   public ClickDebug3Btn() {

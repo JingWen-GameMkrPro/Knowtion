@@ -25,12 +25,14 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
 
 //Source from model
 chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
+  let isAsync = false;
   switch (msg && msg.type) {
     case ChromeRuntimeCommon.BackgroundMessageType.Debug:
       console.log("Received sendDebugMessage");
       break;
     case ChromeRuntimeCommon.BackgroundMessageType.UpdatedMode:
     case ChromeRuntimeCommon.BackgroundMessageType.UpdatedTrie:
+      isAsync = true;
       const tabId = await getCurrentActiveTabId();
       if (tabId !== null) {
         const saveData = await Chrome.Service.GetChromeSaveData();
@@ -47,7 +49,7 @@ chrome.runtime.onMessage.addListener(async (msg, sender, sendResponse) => {
       }
       break;
   }
-  return true;
+  return isAsync;
 });
 
 async function getCurrentActiveTabId(): Promise<number | null> {

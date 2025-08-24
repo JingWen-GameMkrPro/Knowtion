@@ -77,6 +77,8 @@ export class Model {
     let saveData = await Chrome.Service.GetChromeSaveData();
     saveData = await Note.Service.UpdateCurrentNote(saveData);
     await Chrome.Service.SetChromeSaveData(saveData);
+    //tmp
+    const t = await Chrome.Service.GetChromeSaveData();
     this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
     this.Subscriber.Notify(SubscribeType.Notes, saveData.notes);
   }

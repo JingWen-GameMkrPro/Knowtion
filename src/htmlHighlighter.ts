@@ -1,7 +1,7 @@
 import * as Note from "./noteModel";
 import * as Trie from "./trieModel";
 
-export function Highlight(root: Node, trie: Trie.Trie): void {
+export async function Highlight(root: Node, trie: Trie.Trie): Promise<void> {
   // Use a TreeWalker to efficiently find all relevant text nodes.
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (node: Text): number => {
@@ -57,7 +57,7 @@ function collectMatchesInNode(text: string, trieRoot: Trie.TrieNode): HtmlMatchI
         newMatch.startIndex = i;
         newMatch.endIndex = j + 1;
         newMatch.key = lowerText.slice(i, j + 1);
-        newMatch.values = node.blockValuesCollection;
+        newMatch.blocks = node.blocks;
         matches.push(newMatch);
       }
     }
@@ -70,30 +70,45 @@ function highlightMatches(node: Text, matches: HtmlMatchInfo[], trie: Trie.Trie)
   // Sort matches to ensure they are processed in order and to handle nested matches correctly.
   matches.sort((a, b) => a.startIndex - b.startIndex || b.endIndex - a.endIndex);
 
-  // Use a DocumentFragment for efficient DOM manipulation.
+  let index2ValuesMap: { [key: number]: HtmlMatchInfo[] } = {};
+  for (const match of matches) {
+    for (let i = match.startIndex; i < match.endIndex; i++) {
+      if (!index2ValuesMap[i]) {
+        index2ValuesMap[i] = [];
+      }
+      index2ValuesMap[i].push(match);
+    }
+  }
+
   const domCopy = document.createDocumentFragment();
   const text = node.nodeValue ?? "";
   let cursor = 0;
 
-  for (const match of matches) {
-    const { startIndex, endIndex, key, values } = match;
+  const indexs = Object.keys(index2ValuesMap);
+  indexs.forEach((indexStr) => {
+    const indexNum = Number(indexStr);
+    const matches = index2ValuesMap[indexNum];
 
-    // Append the original text before the current match.
-    if (startIndex > cursor) {
-      domCopy.appendChild(document.createTextNode(text.slice(cursor, startIndex)));
+    if (indexNum > cursor) {
+      domCopy.appendChild(document.createTextNode(text.slice(cursor, indexNum)));
     }
 
-    // Create the highlight span element.
+    let matchValues = "";
+    matches.forEach((match, index) => {
+      matchValues += constructTipByValues(match.key, match.blocks, trie);
+      if (index < matches.length - 1) {
+        matchValues += "<br>";
+      }
+    });
+
     const span = document.createElement("span");
-    span.textContent = text.slice(startIndex, endIndex);
+    span.textContent = text[indexNum];
     span.className = "highlight";
     span.style.backgroundColor = "yellow";
 
     span.addEventListener("mouseover", (e: MouseEvent) => {
       const toolTip = getSharedTooltip();
-      // Assuming constructTipByInfos and getSharedTooltip are defined elsewhere
-      toolTip.innerHTML = constructTipByValues(key, values, trie);
-
+      toolTip.innerHTML = matchValues;
       let posX = e.pageX;
       let posY = e.pageY + 10;
       toolTip.style.left = posX + "px";
@@ -102,22 +117,20 @@ function highlightMatches(node: Text, matches: HtmlMatchInfo[], trie: Trie.Trie)
       setTimeout(adjustTooltipPosition, 0);
     });
 
-    // Add mouseout event listener to hide the tooltip.
     span.addEventListener("mouseout", () => {
       const tooltip = getSharedTooltip();
       tooltip.style.opacity = "0";
     });
 
     domCopy.appendChild(span);
-    cursor = endIndex;
-  }
+    cursor = indexNum + 1;
+  });
 
   // Append any remaining text after the last match.
   if (cursor < text.length) {
     domCopy.appendChild(document.createTextNode(text.slice(cursor)));
   }
 
-  // Replace the original text node with the new DOM structure.
   if (node.parentNode) {
     node.parentNode.replaceChild(domCopy, node);
   }
@@ -175,16 +188,24 @@ function getSharedTooltip(): HTMLDivElement {
   return window.sharedTooltip;
 }
 
-function constructTipByValues(key: string, valuess: Note.BlockValue[][], trie: Trie.Trie): string {
+function constructSource(source: string): string {
+  let styleSource = `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold; color: gray; font-size: 8px;">${source}</div>`;
+  return styleSource;
+}
+
+function constructTipByValues(key: string, blocks: Note.Block[], trie: Trie.Trie): string {
   let tip = `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold;">${key}</div>`;
+  if (blocks[0].sourceNoteInfo?.title) {
+    tip += constructSource(blocks[0].sourceNoteInfo?.title);
+  }
   tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
 
-  valuess.forEach((values, i) => {
+  blocks.forEach((block, i) => {
     if (i > 0) {
       tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
     }
 
-    values.forEach((value) => {
+    block.blockValues.forEach((value) => {
       switch (value.type) {
         case Note.BlockValueType.text:
           tip += `<div style="padding:2px 0;">${value.value}</div>`;
@@ -197,7 +218,7 @@ function constructTipByValues(key: string, valuess: Note.BlockValue[][], trie: T
           if (refNode !== null) {
             tip += `<div style="background-color: ${tipColorMap.GREEN}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
             refNode.forEach((refInfosObject) => {
-              refInfosObject.forEach((subInfo) => {
+              refInfosObject.blockValues.forEach((subInfo) => {
                 switch (subInfo.type) {
                   case Note.BlockValueType.referenceText:
                   case Note.BlockValueType.warningText:
@@ -223,7 +244,7 @@ function constructTipByValues(key: string, valuess: Note.BlockValue[][], trie: T
           if (noticeNode !== null) {
             tip += `<div style="background-color: ${tipColorMap.RED}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
             noticeNode.forEach((noticeInfosObject) => {
-              noticeInfosObject.forEach((subInfo) => {
+              noticeInfosObject.blockValues.forEach((subInfo) => {
                 switch (subInfo.type) {
                   case Note.BlockValueType.referenceText:
                   case Note.BlockValueType.warningText:
@@ -259,7 +280,7 @@ const tipColorMap = {
   BLUE: "rgb(0, 32, 65)",
 };
 
-export function ClearHighlight() {
+export async function ClearHighlight() {
   const highlighted = document.querySelectorAll("span.highlight");
   highlighted.forEach((span) => {
     const parent = span.parentNode;
@@ -277,13 +298,13 @@ export interface HtmlMatchInfo {
   startIndex: number;
   endIndex: number;
   key: string;
-  values: Note.BlockValue[][];
+  blocks: Note.Block[];
 }
 export function CreateHtmlMatchInfo(): HtmlMatchInfo {
   return {
     startIndex: 0,
     endIndex: 0,
     key: "",
-    values: [],
+    blocks: [],
   };
 }

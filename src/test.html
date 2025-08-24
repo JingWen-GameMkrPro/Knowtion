@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>多重高亮 Hover 測試</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    .highlight-1 {
+      background-color: #ffd700; /* 金色 */
+    }
+    .highlight-2 {
+      background-color: #a0c4ff; /* 淺藍色 */
+    }
+    .highlight-3 {
+      background-color: #98ff98; /* 淺綠色 */
+    }
+    /* 這裡可以放你的其他高亮樣式 */
+  </style>
+</head>
+<body>
+
+  <h1>高亮文字 Hover 測試</h1>
+  <p>
+    請將滑鼠移到以下文字上，並打開開發者工具（F12），切換到 Console 視窗。
+  </p>
+
+<span id="target-text">
+  <span class="highlight-1">以看看我</span><span class="highlight-1 highlight-2">有多</span><span class="highlight-2">厲害。</span>
+</span>
+
+  <hr>
+
+  <h2>Console 輸出說明</h2>
+  <p>
+    當你將滑鼠移到高亮文字上時，Console 會顯示以下資訊：
+    <ul>
+      <li>如果只觸碰到**一個**高亮區，會印出該區塊的文字。</li>
+      <li>如果觸碰到**多個**高亮區（例如「厲害」），會印出所有被觸及到的高亮文字。</li>
+    </ul>
+  </p>
+
+  <script>
+    // 找出所有高亮元素
+    const highlightElements = document.querySelectorAll('#target-text span');
+
+    // 為每個高亮元素添加滑鼠事件
+    highlightElements.forEach(span => {
+      span.addEventListener('mouseover', (e) => {
+        // 阻止事件冒泡，防止觸發父層的事件
+        e.stopPropagation(); 
+        
+        // 取得當前滑鼠位置的元素
+        const targetElement = e.target;
+        
+        // 找出所有包含當前目標元素的父層高亮元素
+        const parentHighlights = [];
+        let currentElement = targetElement;
+        while (currentElement && currentElement.matches('#target-text *')) {
+          if (currentElement.matches('span')) {
+            parentHighlights.push(currentElement);
+          }
+          currentElement = currentElement.parentElement;
+        }
+
+        // 收集所有高亮文字
+        const highlightedTexts = parentHighlights.map(el => el.textContent);
+        
+        console.groupCollapsed('觸及到的高亮文字');
+        console.log('--- 滑鼠觸及事件 ---');
+        
+        // 印出所有被觸及到的高亮文字
+        if (highlightedTexts.length > 0) {
+          console.log(`共觸及 ${highlightedTexts.length} 個高亮區：`, highlightedTexts);
+        } else {
+          console.log('未觸及高亮區。');
+        }
+        
+        console.groupEnd();
+      });
+    });
+  </script>
+</body>
+</html>

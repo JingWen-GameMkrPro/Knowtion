@@ -46,12 +46,14 @@ export function CreateNotionPage(): NotionPage {
 export interface Block {
   blockKey: string;
   blockValues: BlockValue[]; //區塊內容
+  sourceNoteInfo: NotionPageInfo | null;
 }
 
 export function CreateBlock(): Block {
   return {
     blockKey: "",
     blockValues: [],
+    sourceNoteInfo: null,
   };
 }
 
@@ -125,11 +127,12 @@ export class Service {
     var infoJson = await this.FetchNotionPageInfo(saveData);
     var blocksJson = await this.FetchNotionPage(saveData);
 
+    const newNote = CreateNote();
+
     var newNoteInfo = this.transformJsonAsNotionPageInfo(infoJson);
     var newOrinData = this.transformJsonAsNotionPage(blocksJson);
-    var newBlocks = this.createBlocksByNotionPage(newOrinData);
+    var newBlocks = this.createBlocksByNotionPage(newOrinData, newNoteInfo);
 
-    const newNote = CreateNote();
     newNote.notionPageInfo = newNoteInfo;
     newNote.notionPage = newOrinData;
     newNote.blocks = newBlocks;
@@ -243,11 +246,16 @@ export class Service {
     return newNotionPage;
   }
 
-  private static createBlocksByNotionPage(notionPage: NotionPage): Block[] {
+  private static createBlocksByNotionPage(
+    notionPage: NotionPage,
+    sourceNoteInfo: NotionPageInfo
+  ): Block[] {
     const newBlocks: Block[] = [];
 
     notionPage.notionBlocks.forEach((block) => {
-      const newBlock = this.makeBlockByNotionBlock(block);
+      let newBlock = this.makeBlockByNotionBlock(block);
+      // Copy, not reference
+      newBlock!.sourceNoteInfo = { ...sourceNoteInfo };
       if (!this.isNullorUndefined(newBlock)) {
         newBlocks.push(newBlock);
       }
@@ -292,7 +300,6 @@ export class Service {
   private static makeBlockValue(text: [BlockValueType, string]): BlockValue {
     const newValue = CreateBlockValue();
     newValue.type = text[0];
-    newValue.value = text[1];
     switch (text[0]) {
       case BlockValueType.text:
         newValue.color = BlockValueColor.Normal;
@@ -328,7 +335,6 @@ export class Service {
       matchPatterns?.forEach((pattern) => {
         newBlock.blockValues.push(this.makeBlockValue(pattern));
       });
-
       return newBlock;
     }
 

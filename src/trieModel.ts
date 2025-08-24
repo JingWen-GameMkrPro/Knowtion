@@ -13,20 +13,20 @@ export function CreateTrie(): Trie {
 
 export interface TrieNode {
   children: { [key: string]: TrieNode };
-  blockValuesCollection: Note.BlockValue[][];
+  blocks: Note.Block[];
   isEnd: boolean;
 }
 
 export function CreateTrieNode(): TrieNode {
   return {
     children: {},
-    blockValuesCollection: [],
+    blocks: [],
     isEnd: false,
   };
 }
-export function InsertTrie(trie: Trie, noteLine: Note.Block) {
+export function InsertTrie(trie: Trie, block: Note.Block) {
   let currentNode: TrieNode = trie.root;
-  for (const char of noteLine.blockKey) {
+  for (const char of block.blockKey) {
     if (!currentNode.children[char]) {
       currentNode.children[char] = CreateTrieNode();
     }
@@ -34,10 +34,10 @@ export function InsertTrie(trie: Trie, noteLine: Note.Block) {
   }
 
   currentNode.isEnd = true;
-  currentNode.blockValuesCollection.push(noteLine.blockValues);
+  currentNode.blocks.push(block);
 }
 
-export function SearchTrie(trie: Trie, key: string): Note.BlockValue[][] | null {
+export function SearchTrie(trie: Trie, key: string): Note.Block[] | null {
   let currentNode: TrieNode = trie.root;
   for (const char of key) {
     if (!currentNode.children[char]) {
@@ -47,7 +47,7 @@ export function SearchTrie(trie: Trie, key: string): Note.BlockValue[][] | null 
     currentNode = currentNode.children[char];
   }
 
-  return currentNode.blockValuesCollection;
+  return currentNode.blocks;
 }
 
 export class Service {

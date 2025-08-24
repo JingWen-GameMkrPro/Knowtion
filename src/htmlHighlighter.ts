@@ -2,7 +2,8 @@ import * as Note from "./noteModel";
 import * as Trie from "./trieModel";
 
 export async function Highlight(root: Node, trie: Trie.Trie): Promise<void> {
-  // Use a TreeWalker to efficiently find all relevant text nodes.
+  const startTime = performance.now();
+
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode: (node: Text): number => {
       // 1. Reject nodes that only contain whitespace.
@@ -38,6 +39,18 @@ export async function Highlight(root: Node, trie: Trie.Trie): Promise<void> {
       highlightMatches(textNode, matches, trie);
     }
   }
+
+  // Record the end time
+  const endTime = performance.now();
+
+  // Calculate the execution time in milliseconds and seconds
+  const executionTimeMs = endTime - startTime;
+  const executionTimeSeconds = executionTimeMs / 1000;
+
+  // Log the results to the console
+  console.log(`執行開始時間 (毫秒): ${startTime.toFixed(2)}`);
+  console.log(`執行完成時間 (毫秒): ${endTime.toFixed(2)}`);
+  console.log(`總執行時間 (秒): ${executionTimeSeconds.toFixed(4)}`);
 }
 
 function collectMatchesInNode(text: string, trieRoot: Trie.TrieNode): HtmlMatchInfo[] {
@@ -188,15 +201,13 @@ function getSharedTooltip(): HTMLDivElement {
   return window.sharedTooltip;
 }
 
-function constructSource(source: string): string {
-  let styleSource = `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold; color: gray; font-size: 8px;">${source}</div>`;
-  return styleSource;
-}
-
 function constructTipByValues(key: string, blocks: Note.Block[], trie: Trie.Trie): string {
+  // Key
   let tip = `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold;">${key}</div>`;
+
+  // Source
   if (blocks[0].sourceNoteInfo?.title) {
-    tip += constructSource(blocks[0].sourceNoteInfo?.title);
+    tip += `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold; color: gray; font-size: 8px;">${blocks[0].sourceNoteInfo?.title}</div>`;
   }
   tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
 
@@ -205,29 +216,38 @@ function constructTipByValues(key: string, blocks: Note.Block[], trie: Trie.Trie
       tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
     }
 
-    block.blockValues.forEach((value) => {
-      switch (value.type) {
+    block.blockValues.forEach((blockValue) => {
+      switch (blockValue.type) {
         case Note.BlockValueType.text:
-          tip += `<div style="padding:2px 0;">${value.value}</div>`;
+          tip += `<div style="padding:2px 0;">${blockValue.value}</div>`;
           break;
         case Note.BlockValueType.referenceText: {
-          if (key === value.value) {
+          if (key === blockValue.value) {
             break;
           }
-          const refNode = Trie.SearchTrie(trie, value.value);
+          const refNode = Trie.SearchTrie(trie, blockValue.value);
           if (refNode !== null) {
             tip += `<div style="background-color: ${tipColorMap.GREEN}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
             refNode.forEach((refInfosObject) => {
-              refInfosObject.blockValues.forEach((subInfo) => {
-                switch (subInfo.type) {
+              // Key
+              tip += `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold;">${refInfosObject.blockKey}</div>`;
+
+              // Source
+              if (refInfosObject.sourceNoteInfo?.title) {
+                tip += `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold; color: gray; font-size: 8px;">${refInfosObject.sourceNoteInfo?.title}</div>`;
+              }
+              tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
+
+              refInfosObject.blockValues.forEach((blockValue) => {
+                switch (blockValue.type) {
                   case Note.BlockValueType.referenceText:
                   case Note.BlockValueType.warningText:
                     break;
                   case Note.BlockValueType.text:
-                    tip += `<div style="padding:2px 0;">${subInfo.value}</div>`;
+                    tip += `<div style="padding:2px 0;">${blockValue.value}</div>`;
                     break;
                   case Note.BlockValueType.exampleText:
-                    tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${subInfo.value}</div>`;
+                    tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${blockValue.value}</div>`;
                     break;
                 }
               });
@@ -237,13 +257,21 @@ function constructTipByValues(key: string, blocks: Note.Block[], trie: Trie.Trie
           break;
         }
         case Note.BlockValueType.warningText: {
-          if (key === value.value) {
+          if (key === blockValue.value) {
             break;
           }
-          const noticeNode = Trie.SearchTrie(trie, value.value);
+          const noticeNode = Trie.SearchTrie(trie, blockValue.value);
           if (noticeNode !== null) {
             tip += `<div style="background-color: ${tipColorMap.RED}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">`;
             noticeNode.forEach((noticeInfosObject) => {
+              // Key
+              tip += `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold;">${noticeInfosObject.blockKey}</div>`;
+
+              // Source
+              if (noticeInfosObject.sourceNoteInfo?.title) {
+                tip += `<div style="padding:4px 0; margin-bottom:4px; font-weight: bold; color: gray; font-size: 8px;">${noticeInfosObject.sourceNoteInfo?.title}</div>`;
+              }
+              tip += `<div style="border-top:1px solid rgba(255,255,255,0.2); margin:4px 0;"></div>`;
               noticeInfosObject.blockValues.forEach((subInfo) => {
                 switch (subInfo.type) {
                   case Note.BlockValueType.referenceText:
@@ -263,10 +291,10 @@ function constructTipByValues(key: string, blocks: Note.Block[], trie: Trie.Trie
           break;
         }
         case Note.BlockValueType.exampleText:
-          tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${value.value}</div>`;
+          tip += `<div style="background-color: ${tipColorMap.BLUE}; padding:2px 4px; margin-bottom:2px; border-radius:4px;">${blockValue.value}</div>`;
           break;
         default:
-          console.error("This info doesn't have a valid type: ", value);
+          console.error("This info doesn't have a valid type: ", blockValue);
           break;
       }
     });

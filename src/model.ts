@@ -89,6 +89,7 @@ export class Model {
     this.Subscriber.Notify(SubscribeType.NoteIndex, saveData.noteIndex);
     this.Subscriber.Notify(SubscribeType.Notes, saveData.notes);
     this.Subscriber.Notify(SubscribeType.CurrentNote, saveData.notes[saveData.noteIndex]);
+    this.Subscriber.Notify(SubscribeType.NotionApi, saveData.notionApi);
   }
 
   public async UpdateHighlightMode(isHighlight: boolean): Promise<any | null> {

@@ -1,87 +1,262 @@
+給我簡易介面，分為左右兩個部分，左邊顯示清單，右邊顯示幕前選取的清單項目的詳細資訊
+我會為你建立一個簡潔的左右分割介面，左邊顯示清單，右邊顯示選取項目的詳細資訊！
+完成了！這個介面左邊顯示項目清單，右邊顯示詳細資訊。點擊左邊任何一個項目就能在右邊看到完整的詳細資料。試試點擊不同的項目看看效果！
+
 <!DOCTYPE html>
 <html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
-  <title>多重高亮 Hover 測試</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      line-height: 1.6;
-      padding: 20px;
-    }
-    .highlight-1 {
-      background-color: #ffd700; /* 金色 */
-    }
-    .highlight-2 {
-      background-color: #a0c4ff; /* 淺藍色 */
-    }
-    .highlight-3 {
-      background-color: #98ff98; /* 淺綠色 */
-    }
-    /* 這裡可以放你的其他高亮樣式 */
-  </style>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>清單詳細資訊介面</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600&display=swap");
+      body {
+        font-family: "Noto Sans TC", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="flex h-screen">
+      <!-- 左側清單 -->
+      <div class="w-1/3 bg-white shadow-lg border-r border-gray-200">
+        <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-indigo-600">
+          <h2 class="text-xl font-semibold text-white">項目清單</h2>
+        </div>
+        <div class="overflow-y-auto h-full pb-20">
+          <div id="itemList" class="p-4 space-y-2">
+            <!-- 清單項目會在這裡動態生成 -->
+          </div>
+        </div>
+      </div>
 
-  <h1>高亮文字 Hover 測試</h1>
-  <p>
-    請將滑鼠移到以下文字上，並打開開發者工具（F12），切換到 Console 視窗。
-  </p>
+      <!-- 右側詳細資訊 -->
+      <div class="flex-1 bg-white">
+        <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-indigo-600 to-purple-600">
+          <h2 class="text-xl font-semibold text-white">詳細資訊</h2>
+        </div>
+        <div class="p-8 h-full overflow-y-auto pb-20">
+          <div id="detailContent" class="text-center text-gray-500 mt-20">
+            <div class="text-6xl mb-4">📋</div>
+            <p class="text-lg">請從左側選擇一個項目查看詳細資訊</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-<span id="target-text">
-  <span class="highlight-1">以看看我</span><span class="highlight-1 highlight-2">有多</span><span class="highlight-2">厲害。</span>
-</span>
+    <script>
+      // 範例資料
+      const items = [
+        {
+          id: 1,
+          title: "專案管理系統",
+          category: "軟體開發",
+          status: "進行中",
+          description: "一個全面的專案管理解決方案，幫助團隊更好地協作和追蹤進度。",
+          details: {
+            開始日期: "2024年1月15日",
+            預計完成: "2024年3月30日",
+            負責人: "張小明",
+            團隊成員: "5人",
+            預算: "NT$ 500,000",
+            完成度: "65%",
+          },
+        },
+        {
+          id: 2,
+          title: "網站重新設計",
+          category: "設計",
+          status: "已完成",
+          description: "公司官方網站的全面重新設計，提升用戶體驗和視覺效果。",
+          details: {
+            開始日期: "2023年11月1日",
+            完成日期: "2024年1月10日",
+            負責人: "李小華",
+            團隊成員: "3人",
+            預算: "NT$ 300,000",
+            完成度: "100%",
+          },
+        },
+        {
+          id: 3,
+          title: "行動應用開發",
+          category: "軟體開發",
+          status: "規劃中",
+          description: "開發一款創新的行動應用程式，提供便利的服務給用戶。",
+          details: {
+            預計開始: "2024年2月1日",
+            預計完成: "2024年6月30日",
+            負責人: "王大明",
+            團隊成員: "8人",
+            預算: "NT$ 800,000",
+            完成度: "0%",
+          },
+        },
+        {
+          id: 4,
+          title: "資料庫優化",
+          category: "技術",
+          status: "進行中",
+          description: "優化現有資料庫效能，提升系統整體運行速度。",
+          details: {
+            開始日期: "2024年1月20日",
+            預計完成: "2024年2月28日",
+            負責人: "陳小芳",
+            團隊成員: "2人",
+            預算: "NT$ 150,000",
+            完成度: "40%",
+          },
+        },
+        {
+          id: 5,
+          title: "客戶服務系統",
+          category: "軟體開發",
+          status: "測試中",
+          description: "建立完整的客戶服務管理系統，提升客戶滿意度。",
+          details: {
+            開始日期: "2023年12月1日",
+            預計完成: "2024年2月15日",
+            負責人: "林小強",
+            團隊成員: "6人",
+            預算: "NT$ 600,000",
+            完成度: "85%",
+          },
+        },
+      ];
 
-  <hr>
+      let selectedItemId = null;
 
-  <h2>Console 輸出說明</h2>
-  <p>
-    當你將滑鼠移到高亮文字上時，Console 會顯示以下資訊：
-    <ul>
-      <li>如果只觸碰到**一個**高亮區，會印出該區塊的文字。</li>
-      <li>如果觸碰到**多個**高亮區（例如「厲害」），會印出所有被觸及到的高亮文字。</li>
-    </ul>
-  </p>
+      // 渲染清單
+      function renderList() {
+        const listContainer = document.getElementById("itemList");
+        listContainer.innerHTML = "";
 
-  <script>
-    // 找出所有高亮元素
-    const highlightElements = document.querySelectorAll('#target-text span');
+        items.forEach((item) => {
+          const itemElement = document.createElement("div");
+          itemElement.className = `p-4 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-md ${
+            selectedItemId === item.id
+              ? "bg-blue-50 border-blue-300 shadow-md"
+              : "bg-gray-50 border-gray-200 hover:bg-gray-100"
+          }`;
 
-    // 為每個高亮元素添加滑鼠事件
-    highlightElements.forEach(span => {
-      span.addEventListener('mouseover', (e) => {
-        // 阻止事件冒泡，防止觸發父層的事件
-        e.stopPropagation(); 
-        
-        // 取得當前滑鼠位置的元素
-        const targetElement = e.target;
-        
-        // 找出所有包含當前目標元素的父層高亮元素
-        const parentHighlights = [];
-        let currentElement = targetElement;
-        while (currentElement && currentElement.matches('#target-text *')) {
-          if (currentElement.matches('span')) {
-            parentHighlights.push(currentElement);
+          const statusColor = {
+            進行中: "bg-yellow-100 text-yellow-800",
+            已完成: "bg-green-100 text-green-800",
+            規劃中: "bg-blue-100 text-blue-800",
+            測試中: "bg-purple-100 text-purple-800",
+          };
+
+          itemElement.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-medium text-gray-900 text-sm">${item.title}</h3>
+                        <span class="px-2 py-1 rounded-full text-xs font-medium ${
+                          statusColor[item.status]
+                        }">${item.status}</span>
+                    </div>
+                    <p class="text-xs text-gray-600 mb-2">${item.category}</p>
+                    <p class="text-xs text-gray-500 line-clamp-2">${item.description}</p>
+                `;
+
+          itemElement.addEventListener("click", () => selectItem(item.id));
+          listContainer.appendChild(itemElement);
+        });
+      }
+
+      // 選擇項目
+      function selectItem(itemId) {
+        selectedItemId = itemId;
+        renderList(); // 重新渲染清單以更新選中狀態
+        renderDetail(itemId);
+      }
+
+      // 渲染詳細資訊
+      function renderDetail(itemId) {
+        const item = items.find((i) => i.id === itemId);
+        const detailContainer = document.getElementById("detailContent");
+
+        if (!item) return;
+
+        const statusColor = {
+          進行中: "bg-yellow-100 text-yellow-800",
+          已完成: "bg-green-100 text-green-800",
+          規劃中: "bg-blue-100 text-blue-800",
+          測試中: "bg-purple-100 text-purple-800",
+        };
+
+        detailContainer.innerHTML = `
+                <div class="max-w-2xl">
+                    <div class="flex items-center justify-between mb-6">
+                        <h1 class="text-3xl font-bold text-gray-900">${item.title}</h1>
+                        <span class="px-4 py-2 rounded-full text-sm font-medium ${
+                          statusColor[item.status]
+                        }">${item.status}</span>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <span class="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">${
+                          item.category
+                        }</span>
+                    </div>
+
+                    <div class="mb-8">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-3">專案描述</h2>
+                        <p class="text-gray-700 leading-relaxed">${item.description}</p>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-6">
+                        <h2 class="text-lg font-semibold text-gray-900 mb-4">詳細資訊</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${Object.entries(item.details)
+                              .map(
+                                ([key, value]) => `
+                                <div class="flex justify-between py-2 border-b border-gray-200">
+                                    <span class="font-medium text-gray-600">${key}:</span>
+                                    <span class="text-gray-900">${value}</span>
+                                </div>
+                            `
+                              )
+                              .join("")}
+                        </div>
+                    </div>
+                </div>
+            `;
+      }
+
+      // 初始化
+      renderList();
+    </script>
+    <script>
+      (function () {
+        function c() {
+          var b = a.contentDocument || a.contentWindow.document;
+          if (b) {
+            var d = b.createElement("script");
+            d.innerHTML =
+              "window.__CF$cv$params={r:'97417fd48320f1d0',t:'MTc1NjAyNDM0OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+            b.getElementsByTagName("head")[0].appendChild(d);
           }
-          currentElement = currentElement.parentElement;
         }
-
-        // 收集所有高亮文字
-        const highlightedTexts = parentHighlights.map(el => el.textContent);
-        
-        console.groupCollapsed('觸及到的高亮文字');
-        console.log('--- 滑鼠觸及事件 ---');
-        
-        // 印出所有被觸及到的高亮文字
-        if (highlightedTexts.length > 0) {
-          console.log(`共觸及 ${highlightedTexts.length} 個高亮區：`, highlightedTexts);
-        } else {
-          console.log('未觸及高亮區。');
+        if (document.body) {
+          var a = document.createElement("iframe");
+          a.height = 1;
+          a.width = 1;
+          a.style.position = "absolute";
+          a.style.top = 0;
+          a.style.left = 0;
+          a.style.border = "none";
+          a.style.visibility = "hidden";
+          document.body.appendChild(a);
+          if ("loading" !== document.readyState) c();
+          else if (window.addEventListener) document.addEventListener("DOMContentLoaded", c);
+          else {
+            var e = document.onreadystatechange || function () {};
+            document.onreadystatechange = function (b) {
+              e(b);
+              "loading" !== document.readyState && ((document.onreadystatechange = e), c());
+            };
+          }
         }
-        
-        console.groupEnd();
-      });
-    });
-  </script>
-</body>
+      })();
+    </script>
+  </body>
 </html>
